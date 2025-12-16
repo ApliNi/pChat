@@ -78,7 +78,7 @@
             transform: translateY(-50%); pointer-events: none; color: var(--meta-color);
         }
 
-        select {
+        #model-select {
             appearance: none; -webkit-appearance: none;
             background: #000; color: var(--text-color);
             border: 1px solid var(--border-color);
@@ -86,10 +86,10 @@
             font-family: var(--font-stack); font-size: 12px;
             cursor: pointer; outline: none; border-radius: 0;
             text-transform: uppercase;
-			max-width: 300px;
+			width: 300px;
 			transition: all 0.3s;
         }
-        select:hover { border-color: #fff; }
+        #model-select:hover { border-color: #fff; }
 
         .status-dot {
             height: 8px; width: 8px; background: #333; transition: all 0.3s;
@@ -323,7 +323,12 @@
 			#sidebar-toggle:checked ~ #chat-container #sidebar {
 				left: 0;
 			}
+
+			header h1 { display: none; }
+
+			#model-select { width: 100%; }
 		}
+
     </style>
 </head>
 <body>
@@ -468,6 +473,7 @@
     let isProcessing = false;
     let currentSessionId = null;
     let sessions = [];
+	let isAutoScroll = true;
 
     // --- Utilities ---
     const generateId = () => 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
@@ -814,6 +820,8 @@
         chatHistory.push(userMsg);
         appendMessageToDOM('user', text, userMsgId);
 
+		scrollToBottom(true);
+
         await saveCurrentSession();
         await performAIRequest();
     }
@@ -933,16 +941,22 @@
         if (role === 'assistant' && modelLabel) displayLabel = modelLabel.toUpperCase();
 
         let buttonsHtml = `<button class="action-btn btn-del" onclick="confirmDeleteMsg('${id}')">[DEL]</button>`;
+        let regenBtn = '';
+
         if (role === 'assistant') {
-            buttonsHtml = `
-                <div class="left-actions">
-                    <button class="action-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>
-                    ${buttonsHtml}
-                </div>
-            `;
-        } else {
-            buttonsHtml = `<div class="left-actions">${buttonsHtml}</div>`;
+            regenBtn = `<button class="action-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
+        } else if (role === 'user') {
+            // 为用户添加重新生成回复的按钮
+            regenBtn = `<button class="action-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
         }
+
+        // 将 regen 按钮和 del 按钮放入同一个容器
+        buttonsHtml = `
+            <div class="left-actions">
+                ${regenBtn}
+                ${buttonsHtml}
+            </div>
+        `;
 
         const cursorClass = (role === 'assistant' && text === '') ? 'cursor' : '';
 
@@ -985,7 +999,54 @@
     window.regenerateMessage = function(id) {
         if (isProcessing) return;
         performAIRequest(id);
-    };
+    }
+
+	window.regenerateResponseTo = async function(id) {
+        if (isProcessing) return;
+
+        const userIndex = chatHistory.findIndex(m => m.id === id);
+        if (userIndex === -1) return;
+
+        const nextMsg = chatHistory[userIndex + 1];
+
+        // 情况 1: 下一条消息存在且是 AI 回复 -> 直接重新生成该条
+        if (nextMsg && nextMsg.role === 'assistant') {
+            await performAIRequest(nextMsg.id);
+        }
+        // 情况 2: 下一条消息不存在，或者下一条是用户消息 (中间插入) -> 新建 AI 消息
+        else {
+            const currentModel = modelSelect.value;
+            const newAiId = generateId();
+            
+            // 1. 在历史记录数组中，插入到该用户消息之后
+            const newMsgObj = {
+                role: 'assistant',
+                content: '',
+                id: newAiId,
+                model: currentModel
+            };
+            chatHistory.splice(userIndex + 1, 0, newMsgObj);
+
+            // 2. 创建 DOM 元素
+            // 先通过 appendMessageToDOM 创建（默认会加到最后）
+            appendMessageToDOM('assistant', '', newAiId, currentModel, false);
+            
+            // 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素之后)
+            const userDiv = document.getElementById(id);
+            const newAiDiv = document.getElementById(newAiId);
+            if (userDiv && newAiDiv) {
+                if (userDiv.nextSibling) {
+                    messageArea.insertBefore(newAiDiv, userDiv.nextSibling);
+                } else {
+                    messageArea.appendChild(newAiDiv);
+                }
+            }
+
+            // 4. 保存状态并开始生成
+            await saveCurrentSession();
+            await performAIRequest(newAiId);
+        }
+    }
 
     window.confirmDeleteMsg = async function(id) {
         const btn = document.querySelector(`#${id} .btn-del`);
@@ -1011,7 +1072,7 @@
             chatHistory = chatHistory.filter(item => item.id !== id);
             await saveCurrentSession();
         }
-    };
+    }
 
     function toggleState(loading) {
         isProcessing = loading;
@@ -1028,7 +1089,16 @@
         }
     }
 
-    function scrollToBottom() {
+	// 监听滚动事件：碰到底部设为 true，离开底部设为 false
+	messageArea.addEventListener('scroll', () => {
+        const threshold = 20;
+        // 判断当前滚动位置是否在底部
+        isAutoScroll = messageArea.scrollTop + messageArea.clientHeight >= messageArea.scrollHeight - threshold;
+    });
+
+    function scrollToBottom(force = false) {
+		if(force) isAutoScroll = true;
+		if(!isAutoScroll) return;
         messageArea.scrollTop = messageArea.scrollHeight;
     }
 </script>
