@@ -37,7 +37,7 @@
             --user-msg-color: #00ff00;
             --ai-msg-color: #ffffff;
             --sys-msg-color: #00ccff;
-            --meta-color: #555;
+            --meta-color: #848484;
             --danger-color: #ff3333;
             --active-item-bg: #161616;
             --font-stack: 'JetBrainsMono', 'HarmonyOS', 'Segoe UI Emoji', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
@@ -226,9 +226,29 @@
         .message.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.02); }
 
         .role-label {
-            font-size: 10px; opacity: 0.5; margin-bottom: 6px;
-            display: flex; justify-content: space-between;
+            /* 核心吸附逻辑 */
+            position: sticky;
+            top: 0;
+            z-index: 100; /* 确保在代码块等内容之上 */
+
+            /* 视觉样式：增加背景和模糊，防止下方滚动的文字穿透显示 */
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            
+            /* 布局调整：让标题栏填满整个气泡顶部，消除原有 padding 的间隙 */
+            margin: -10px -15px 18px -15px; /* 抵消 .message 的 padding */
+            padding: 8px 15px;              /* 重新补回内边距 */
+            
+            /* 原有字体设置 */
+            font-size: 10px;
+            opacity: 0.8; /*稍微提高不透明度以适配深色背景*/
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
         .content {
@@ -238,8 +258,38 @@
         .content:focus { background: rgba(255,255,255,0.03); }
 
         .msg-footer {
-            display: flex; justify-content: space-between; align-items: center;
-            border-top: 1px dashed #222; padding-top: 4px; margin-top: 2px;
+            /* 视觉样式：背景、模糊、边框 */
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            
+            margin: 10px -15px -10px -15px; /* 上边距留出一点空间，下/左/右抵消 padding */
+            padding: 6px 15px;             /* 重新补回内边距 */
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 32px;
+        }
+
+        /* 同样为不同角色的底部栏提供微调背景（可选，建议与 Header 保持一致） */
+        .message.user .role-label, .message.user .msg-footer {
+            background: rgba(13, 20, 13, 0.95);
+            border-top-color: rgba(0, 255, 0, 0.1);
+        }
+        .message.assistant .role-label, .message.assistant .msg-footer {
+            background: rgba(20, 20, 20, 0.95);
+        }
+        .message.system .role-label, .message.system .msg-footer {
+            background: rgba(13, 20, 25, 0.95);
+            border-top-color: rgba(0, 204, 255, 0.1);
+        }
+
+        /* 修正：在吸附状态下，确保统计文字不会太暗 */
+        .meta-stats {
+            font-size: 9px;
+            color: #666; /* 稍微调亮一点，原来的 #444 在有背景时可能看不清 */
+            text-align: right;
         }
 
         .left-actions { display: flex; gap: 8px; }
@@ -248,10 +298,10 @@
             font-family: var(--font-stack); font-size: 9px;
             cursor: pointer; padding: 0; opacity: 0.5;
             transition: all 0.2s; text-transform: uppercase;
+			color: var(--meta-color);
         }
         .action-btn:hover { opacity: 1; }
-        .btn-del, .btn-regen { color: var(--meta-color); }
-        .btn-del:hover, .btn-regen:hover { color: #fff; }
+        .action-btn:hover { color: #fff; }
         .btn-del.confirm-state { color: var(--danger-color); font-weight: bold; opacity: 1; }
         
         .meta-stats { font-size: 9px; color: #444; text-align: right; min-height: 14px; }
@@ -484,7 +534,7 @@
 			#sidebar {
 				position: absolute;
 				left: -300px;
-				z-index: 100;
+				z-index: 1000;
 				width: 240px;
 				height: 100%;
 				box-shadow: 10px 0 20px rgba(0,0,0,0.8);
@@ -543,7 +593,7 @@
 <script>
 
 	// CONFIG
-	const priorityModels = ['qwen3-max', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'];
+	const priorityModels = ['qwen3-max', 'gemini-3-pro', 'gemini-2.5', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'];
 
 	marked.setOptions({
         highlight: function(code, lang) {
@@ -731,12 +781,16 @@
             const div = document.createElement('div');
             div.className = `history-item ${session.id === currentSessionId ? 'active' : ''}`;
             
-            // Note: We move the onclick to the div, but we need to prevent bubble for edit/delete
+            // 点击切换会话
             div.onclick = (e) => {
-                // If we are currently editing a title, don't switch
+                // 关键检查：如果当前正在编辑标题，或者是通过长按触发的编辑状态，则不切换会话
                 if (e.target.isContentEditable) return;
+                
                 switchSession(session.id);
-				document.getElementById('sidebar-toggle').checked = false;
+                // 移动端点击后收起侧边栏
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar-toggle').checked = false;
+                }
             };
             
             div.innerHTML = `
@@ -747,16 +801,51 @@
                 <button class="history-del-btn">×</button>
             `;
 
-            // Setup Delete Button
+            // 删除按钮逻辑
             const delBtn = div.querySelector('.history-del-btn');
             delBtn.onclick = (e) => deleteSession(e, session.id);
 
-            // Setup Rename (Double Click)
+            // --- 标题编辑逻辑 (双击 + 长按) ---
             const titleDiv = div.querySelector('.history-title');
+
+            // 1. PC端：双击重命名
             titleDiv.ondblclick = (e) => {
-                e.stopPropagation(); // Prevent switching session
+                e.stopPropagation();
                 makeTitleEditable(titleDiv, session.id);
             };
+
+            // 2. 移动端：长按重命名
+            let pressTimer;
+            const longPressDuration = 600; // 长按 600ms 触发
+
+            titleDiv.addEventListener('touchstart', (e) => {
+                // 启动定时器
+                pressTimer = setTimeout(() => {
+                    // 触发震动反馈 (如果设备支持)
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    
+                    // 进入编辑模式
+                    makeTitleEditable(titleDiv, session.id);
+                    
+                    // 阻止默认菜单 (防止长按弹出浏览器菜单)
+                    e.preventDefault();
+                }, longPressDuration);
+            }, { passive: false });
+
+            titleDiv.addEventListener('touchend', () => {
+                // 手指抬起，清除定时器
+                if (pressTimer) clearTimeout(pressTimer);
+            });
+
+            titleDiv.addEventListener('touchmove', () => {
+                // 手指移动 (说明在滚动列表)，清除定时器
+                if (pressTimer) clearTimeout(pressTimer);
+            });
+            
+            // 防止长按默认弹出的上下文菜单干扰
+            titleDiv.addEventListener('contextmenu', (e) => {
+                if (pressTimer) e.preventDefault();
+            });
 
             historyList.appendChild(div);
         });
@@ -794,14 +883,13 @@
 
     async function switchSession(sessionId) {
         if (isProcessing) return;
-        if (currentSessionId === sessionId) return;
+        if (currentSessionId === sessionId && messageArea.innerHTML !== '') return; // 简单防抖
 
         currentSessionId = sessionId;
-
-		const session = sessions.find(s => s.id === sessionId);
-		if (session) {
-			document.title = `[Chat] ${session.title}`;
-		}
+        const session = sessions.find(s => s.id === sessionId);
+        if (session) {
+            document.title = `[Chat] ${session.title}`;
+        }
 
         try {
             chatHistory = await IDBManager.getSessionMessages(sessionId);
@@ -810,22 +898,15 @@
         }
         
         messageArea.innerHTML = '';
+        
+        // 简化：直接把 content 传进去，appendMessageToDOM 会自己判断是渲染 MD 还是显示纯文本
         chatHistory.forEach(msg => {
-            // appendMessageToDOM 只是创建结构
-            const els = appendMessageToDOM(msg.role, '', msg.id, msg.model || null, false);
-            
-            // 这里手动渲染内容
-            if (msg.role === 'assistant') {
-                els.contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(msg.content));
-            } else {
-                // 用户消息通常保持纯文本，或者你也想支持用户发 markdown，就用上面一样的逻辑
-                els.contentDiv.textContent = msg.content;
-            }
-			els.contentDiv.classList.remove('cursor');
+            const els = appendMessageToDOM(msg.role, msg.content, msg.id, msg.model || null, false);
+            els.contentDiv.classList.remove('cursor');
         });
         
         renderSidebar();
-        scrollToBottom();
+        scrollToBottom(true); // 切换会话时强制滚动到底部
     }
 
 	async function createIntroSession() {
@@ -983,7 +1064,10 @@
         localStorage.setItem('puter_last_model', modelSelect.value);
     });
 
-    newChatBtn.addEventListener('click', () => createNewSession());
+    newChatBtn.addEventListener('click', () => {
+		createNewSession();
+		document.getElementById('sidebar-toggle').checked = false;
+	});
 
     // --- Chat Logic ---
     userInput.addEventListener('input', function() {
@@ -1039,6 +1123,11 @@
             const msgDiv = document.getElementById(targetId);
             const contentDiv = msgDiv.querySelector('.content');
             const metaDiv = msgDiv.querySelector('.meta-stats');
+			msgDiv.dataset.rendered = 'true';
+            msgDiv.querySelector('.btn-toggle').innerText = '[RAW]';
+            contentDiv.contentEditable = 'false'; // 生成时禁止编辑
+
+            msgDiv.querySelector('.role-label span:first-child').innerText = currentModel.toUpperCase();
             
             contentDiv.textContent = "";
             contentDiv.classList.add('cursor'); // 激活光标
@@ -1093,10 +1182,6 @@
 					chatHistory[targetIndex].content = fullText;
 					// [新增] 更新历史记录中的模型名称
 					chatHistory[targetIndex].model = currentModel;
-					
-					const msgDiv = document.getElementById(targetId);
-					const roleLabel = msgDiv.querySelector('.role-label span:first-child');
-					roleLabel.innerText = currentModel.toUpperCase();
 				}
 			} else {
 				// [修改] 推送新消息时包含 model 字段
@@ -1129,37 +1214,44 @@
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${role}`;
         if(animate) msgDiv.style.animation = 'fadeIn 0.3s ease';
-        
         msgDiv.id = id;
+
+        // 1. 确定默认状态
+        // AI 默认渲染 (isRendered = true), 用户/系统 默认源码 (isRendered = false)
+        const isDefaultRendered = (role === 'assistant');
+        msgDiv.dataset.rendered = isDefaultRendered;
 
         let displayLabel = role.toUpperCase();
         if (role === 'assistant' && modelLabel) displayLabel = modelLabel.toUpperCase();
 
-        let buttonsHtml = `<button class="action-btn btn-del" onclick="confirmDeleteMsg('${id}')">[DEL]</button>`;
         let regenBtn = '';
-
         if (role === 'assistant') {
             regenBtn = `<button class="action-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
         } else if (role === 'user') {
-            // 为用户添加重新生成回复的按钮
             regenBtn = `<button class="action-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
         }
 
-        // 将 regen 按钮和 del 按钮放入同一个容器
-        buttonsHtml = `
+        // 组合按钮
+        let buttonsHtml = `
             <div class="left-actions">
                 ${regenBtn}
-                ${buttonsHtml}
+                <button class="action-btn btn-del" onclick="confirmDeleteMsg('${id}')">[DEL]</button>
             </div>
         `;
 
         const cursorClass = (role === 'assistant' && text === '') ? 'cursor' : '';
+        // 只有在源码模式下才允许编辑 (plaintext-only)，渲染模式下禁止直接编辑 (false)
+        const editableState = isDefaultRendered ? 'false' : 'plaintext-only';
+
+        // 新增 toggle 按钮
+        const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isDefaultRendered ? '[RAW]' : '[RENDER]'}</button>`;
 
         msgDiv.innerHTML = `
             <span class="role-label">
                 <span>${displayLabel}</span>
+				${toggleBtn}
             </span>
-            <div class="content markdown-body ${cursorClass}" ${role !== 'assistant' ? 'contenteditable="plaintext-only" spellcheck="false"' : ''}></div>
+            <div class="content markdown-body ${cursorClass}" contenteditable="${editableState}" spellcheck="false"></div>
             <div class="msg-footer">
                 ${buttonsHtml}
                 <div class="meta-stats"></div>
@@ -1167,14 +1259,28 @@
         `;
 
         const contentArea = msgDiv.querySelector('.content');
-        contentArea.textContent = text;
+        
+        // 3. 初始内容填充
+        if (isDefaultRendered) {
+            // 如果是 AI，且有内容，则渲染 MD
+            if (text) {
+                contentArea.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            }
+        } else {
+            // 如果是用户/系统，显示纯文本
+            contentArea.textContent = text;
+        }
 
         messageArea.appendChild(msgDiv);
         if(animate) scrollToBottom();
 
+        // 4. 监听输入事件 (仅在 contenteditable 为 true 时有效，即源码模式)
         contentArea.addEventListener('input', () => {
-            const newText = contentArea.innerText;
-            updateHistoryContent(id, newText);
+            // 只有在源码模式下才保存，防止渲染模式下的意外改动
+            if (msgDiv.dataset.rendered === 'false') {
+                const newText = contentArea.innerText; // innerText 获取纯文本
+                updateHistoryContent(id, newText);
+            }
         });
 
         return {
@@ -1194,6 +1300,62 @@
     window.regenerateMessage = function(id) {
         if (isProcessing) return;
         performAIRequest(id);
+    }
+
+	window.toggleMessageView = function(id) {
+        // 如果正在生成回复，暂不建议切换，防止流式传输冲突（可选限制）
+        if (isProcessing) return;
+
+        const msgDiv = document.getElementById(id);
+        if (!msgDiv) return;
+
+        const contentDiv = msgDiv.querySelector('.content');
+        const toggleBtn = msgDiv.querySelector('.btn-toggle');
+        
+        // 获取当前状态
+        const isRendered = msgDiv.dataset.rendered === 'true';
+        
+        // 获取当前对应的历史消息内容
+        const msgItem = chatHistory.find(m => m.id === id);
+        if (!msgItem) return;
+        const rawContent = msgItem.content;
+
+        if (isRendered) {
+            // === 切换到源码模式 (RAW) ===
+            // 1. 切换内容为纯文本
+            contentDiv.textContent = rawContent;
+            // 2. 允许编辑
+            contentDiv.contentEditable = 'plaintext-only';
+            // 3. 更新状态标记
+            msgDiv.dataset.rendered = 'false';
+            // 4. 更新按钮文本 (现在显示的是源码，按钮提示用户点击可渲染)
+            toggleBtn.innerText = '[RENDER]';
+            
+            // 稍微高亮一下表示可编辑
+            contentDiv.style.background = 'rgba(255,255,255,0.05)';
+            setTimeout(() => contentDiv.style.background = '', 300);
+
+        } else {
+            // === 切换到渲染模式 (RENDER) ===
+            // 1. 获取当前编辑器里的文本 (用户可能刚刚修改过)
+            const currentRawText = contentDiv.innerText;
+            
+            // 2. 确保历史记录是最新的
+            if (currentRawText !== rawContent) {
+                updateHistoryContent(id, currentRawText);
+            }
+
+            // 3. 渲染 Markdown
+            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentRawText));
+            
+            // 4. 禁止编辑 (渲染后的 HTML 不适合直接编辑)
+            contentDiv.contentEditable = 'false';
+            
+            // 5. 更新状态标记
+            msgDiv.dataset.rendered = 'true';
+            // 6. 更新按钮文本
+            toggleBtn.innerText = '[RAW]';
+        }
     }
 
 	window.regenerateResponseTo = async function(id) {
