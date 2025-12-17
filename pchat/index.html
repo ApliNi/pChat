@@ -147,7 +147,35 @@
             flex: 1;
             overflow-y: auto;
             padding: 10px 0 0 0;
-			content-visibility: auto;
+            content-visibility: auto;
+        }
+
+        /* [新增] 侧边栏底部样式 */
+        .sidebar-footer {
+            padding: 10px;
+            border-top: 1px solid #1a1a1a;
+            display: flex;
+            gap: 5px;
+            background: var(--sidebar-bg);
+            flex-shrink: 0; /* 防止被压缩 */
+        }
+
+        .sidebar-footer button {
+            flex: 1;
+            background: transparent;
+            color: #666;
+            border: 1px solid #333;
+            padding: 6px;
+            font-family: var(--font-stack);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sidebar-footer button:hover {
+            color: #fff;
+            border-color: #666;
+            background: rgba(255,255,255,0.05);
         }
 
         .history-item {
@@ -686,6 +714,11 @@
             <button id="new-chat-btn">[ + NEW SESSION ]</button>
         </div>
         <div id="history-list"></div>
+		<div class="sidebar-footer">
+            <button id="import-btn">IMPORT</button>
+            <button id="export-btn">EXPORT</button>
+            <input type="file" id="import-input" accept=".json" style="display: none;">
+        </div>
     </aside>
 
     <main id="right-panel">
@@ -824,7 +857,38 @@
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
-        }
+        },
+		
+		async getAllChats() {
+            return new Promise((resolve, reject) => {
+                const tx = this.db.transaction('chats', 'readonly');
+                const store = tx.objectStore('chats');
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
+                request.onerror = () => reject(request.error);
+            });
+        },
+
+        async importBackup(data) {
+            return new Promise((resolve, reject) => {
+                const tx = this.db.transaction(['sessions', 'chats'], 'readwrite');
+                
+                // 1. 导入 Sessions
+                const sessionStore = tx.objectStore('sessions');
+                if (Array.isArray(data.sessions)) {
+                    data.sessions.forEach(session => sessionStore.put(session));
+                }
+
+                // 2. 导入 Chats
+                const chatStore = tx.objectStore('chats');
+                if (Array.isArray(data.chats)) {
+                    data.chats.forEach(chat => chatStore.put(chat));
+                }
+
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        },
     };
 
     // --- DOM Elements ---
@@ -837,6 +901,9 @@
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
 	const minimap = document.getElementById('minimap');
+	const importBtn = document.getElementById('import-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const importInput = document.getElementById('import-input');
 
     // --- State Management ---
     let chatHistory = [];
@@ -1130,6 +1197,7 @@
 ## 界面
 - 模型切换: 点击右上角下拉菜单切换模型.
 - 会话管理: 左侧边栏选择支持 新建/切换/删除, 双击或长按标题可重命名.
+- 导入导出: 通过左侧边栏下方的 [IMPORT] / [EXPORT] 按钮导出导出数据, 导入支持合并会话.
 - 小地图: 界面右侧的小地图可以快速定位到消息位置.
 
 ## 消息框
@@ -1313,15 +1381,7 @@
         }
     });
 
-    sendBtn.addEventListener('click', async () => {
-		await handleSend();
-		setTimeout(() => {
-			window.scrollTo({
-				top: document.body.scrollHeight,
-				behavior: 'smooth',
-			});
-		}, 50);
-	});
+    sendBtn.addEventListener('click', () => handleSend());
 
     async function handleSend() {
         const text = userInput.value.trim();
@@ -1337,7 +1397,12 @@
         chatHistory.push(userMsg);
         appendMessageToDOM('user', text, userMsgId);
 
-		scrollToBottom(true);
+		setTimeout(() => {
+			window.scrollTo({
+				top: document.body.scrollHeight,
+				behavior: 'smooth',
+			});
+		}, 50);
 
         await saveCurrentSession();
         await performAIRequest();
@@ -1790,6 +1855,85 @@
         // 6. 切换到新会话
         await switchSession(newSessionId);
     }
+
+	    // 导出功能
+    exportBtn.addEventListener('click', async () => {
+        if (isProcessing) return;
+        const originalText = exportBtn.innerText;
+        exportBtn.innerText = 'WAIT...';
+
+        try {
+            // 1. 获取所有数据
+            const sessionsData = await IDBManager.getAllSessions();
+            const chatsData = await IDBManager.getAllChats();
+
+            // 2. 构造 JSON 对象
+            const backupData = {
+                version: 1,
+                timestamp: Date.now(),
+                sessions: sessionsData,
+                chats: chatsData
+            };
+
+            // 3. 创建 Blob 并下载
+            const blob = new Blob([JSON.stringify(backupData, null, '\t')], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pChat_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (e) {
+            console.error('Export failed:', e);
+            alert('Export failed!');
+        } finally {
+            exportBtn.innerText = originalText;
+        }
+    });
+
+    // 导入按钮点击
+    importBtn.addEventListener('click', () => {
+        if (isProcessing) return;
+        importInput.click();
+    });
+
+    // 处理文件选择
+    importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 二次确认
+        if (!confirm('Importing will merge data. Existing sessions with the same ID will be overwritten. Continue?')) {
+            importInput.value = ''; // 清空选择
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                // 简单校验格式
+                if (!data.sessions || !data.chats) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                // 执行导入
+                await IDBManager.importBackup(data);
+                
+                alert('Import successful! The page will reload.');
+                location.reload(); // 刷新页面以加载新数据
+
+            } catch (err) {
+                console.error(err);
+                alert('Import failed: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    });
 
     function toggleState(loading) {
         isProcessing = loading;
