@@ -233,27 +233,23 @@
         .message.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.02); }
 
 		.message.highlight {
-			background: rgba(255, 255, 255, 0.1);
+			/* background: rgba(255, 255, 255, 0.1); */
+			filter: brightness(150%);
 		}
 
         .role-label {
-            /* 核心吸附逻辑 */
             position: sticky;
             top: 0;
-            z-index: 100; /* 确保在代码块等内容之上 */
-
-            /* 视觉样式：增加背景和模糊，防止下方滚动的文字穿透显示 */
+            z-index: 100;
             background: rgba(13, 13, 13, 0.95);
             backdrop-filter: blur(5px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             
-            /* 布局调整：让标题栏填满整个气泡顶部，消除原有 padding 的间隙 */
             margin: -10px -15px 18px -15px; /* 抵消 .message 的 padding */
-            padding: 8px 15px;              /* 重新补回内边距 */
+            padding: 8px 15px;
             
-            /* 原有字体设置 */
             font-size: 10px;
-            opacity: 0.8; /*稍微提高不透明度以适配深色背景*/
+            opacity: 0.95;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -383,7 +379,7 @@
 
 		/* --- Minimap (Right Sidebar) --- */
         #minimap {
-            width: 80px;
+            width: 70px;
 			background: transparent;
 			display: flex;
 			flex-direction: column;
@@ -395,6 +391,7 @@
 			right: 7px;
 			top: 0;
 			bottom: 0;
+			pointer-events: none;
         }
 
         /* 隐藏滚动条但保留功能 */
@@ -408,10 +405,15 @@
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
+			pointer-events: all;
         }
 
         .minimap-item:hover {
-            
+            filter: brightness(130%);
+        }
+
+		.minimap-item.collapsed {
+            opacity: 0.35;
         }
 
         /* 颜色映射，与主界面一致 */
@@ -420,7 +422,7 @@
         .minimap-item.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.05); }
 
         /* 手机端隐藏小地图 */
-        @media (max-width: 1220px) {
+        @media (max-width: 1200px) {
             #minimap { display: none; }
         }
 
@@ -568,7 +570,7 @@
             overflow-x: auto;
             overflow-y: auto;
 			margin: 0.8em 0;
-			max-height: 450px;
+			max-height: 445px;
         }
         
         .markdown-body pre code {
@@ -836,9 +838,9 @@
 	// --- Minimap Functions ---
     
     // 添加小方块
-    function addMinimapItem(role, id) {
+    function addMinimapItem(role, id, isCollapsed = false) {
         const item = document.createElement('div');
-        item.className = `minimap-item ${role}`;
+        item.className = `minimap-item ${role} ${isCollapsed ? 'collapsed' : ''}`;
         item.dataset.targetId = id; // 绑定对应消息的 ID
         
         // 点击滚动到对应消息
@@ -848,7 +850,7 @@
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 // 短暂高亮目标消息
                 target.classList.add('highlight');
-                setTimeout(() => target.classList.remove('highlight'), 500);
+                setTimeout(() => target.classList.remove('highlight'), 300);
             }
         };
         
@@ -1484,7 +1486,7 @@
 
 		messageArea.appendChild(msgDiv);
 
-		addMinimapItem(role, id);
+		addMinimapItem(role, id, isCollapsed);
 
 		if(animate) scrollToBottom();
 
@@ -1593,7 +1595,16 @@
 			btn.innerText = '[-]';
 		}
 
-		// --- [新增] --- 保存状态到 IndexedDB
+		const minimapItem = document.querySelector(`.minimap-item[data-target-id="${id}"]`);
+        if (minimapItem) {
+            if (isCollapsed) {
+                minimapItem.classList.add('collapsed');
+            } else {
+                minimapItem.classList.remove('collapsed');
+            }
+        }
+
+		// 保存状态到 IndexedDB
 		const msgIndex = chatHistory.findIndex(m => m.id === id);
 		if (msgIndex !== -1) {
 			// 更新内存中的状态
