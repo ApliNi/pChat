@@ -1165,6 +1165,7 @@
 
     function makeTitleEditable(element, sessionId) {
         element.contentEditable = 'plaintext-only';
+		element.style.textOverflow = 'clip';
         element.focus();
         
         // Select all text
@@ -1176,10 +1177,12 @@
 
         const save = async () => {
             element.contentEditable = false;
-            const newTitle = element.innerText.trim() || 'Untitled Session';
+			const oldTitle = element.innerText.trim() || 'Untitled Session';
+            const newTitle = (element.innerText.replace(/\s+/g, ' ').trim() || oldTitle).substring(0, 47);
+			element.innerText = newTitle;
+			element.scrollLeft = 0;
+			element.style.textOverflow = 'ellipsis';
             await renameSession(null, sessionId, newTitle);
-            // Re-render to sort or format correctly if needed, or just let it be
-            // renderSidebar(); // Optional: might disrupt if editing multiple
         };
 
         const onKeyDown = (e) => {
@@ -1343,7 +1346,7 @@ You are a helpful coding assistant. Answer concisely.
     async function updateSessionTitleIfNeeded(userText) {
         const session = sessions.find(s => s.id === currentSessionId);
         if (session && session.title === '') {
-            session.title = userText.trim().substring(0, 32).replace(/\s+/g, ' ');
+            session.title = userText.trim().substring(0, 47).replace(/\s+/g, ' ');
             await saveSessionMetaLocal(session);
 			updateTitle(session.title);
         }
