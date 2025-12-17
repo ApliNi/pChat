@@ -145,6 +145,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 5px 0;
+			content-visibility: auto;
         }
 
         .history-item {
@@ -219,11 +220,21 @@
             position: relative;
             display: flex;
             flex-direction: column;
+			transition: all 0.2s;
+			content-visibility: auto;
         }
+		.message:last-child {
+			content-visibility: visible !important;
+			contain: none !important;
+		}
 
         .message.user { border-left-color: var(--user-msg-color); background: rgba(0, 255, 0, 0.02); }
         .message.assistant { border-left-color: var(--ai-msg-color); background: rgba(255, 255, 255, 0.02); }
         .message.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.02); }
+
+		.message.highlight {
+			background: rgba(255, 255, 255, 0.1);
+		}
 
         .role-label {
             /* 核心吸附逻辑 */
@@ -256,6 +267,32 @@
             outline: none; transition: background 0.2s; background: rgba(255,255,255,0);
         }
         .content:focus { background: rgba(255,255,255,0.03); }
+
+		/* 头部按钮组，让折叠按钮和RAW按钮排在一起 */
+        .role-header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* 折叠后的内容样式 */
+        .content.collapsed {
+            height: 21px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            opacity: 0.5;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        
+        /* 确保折叠时内部元素不破坏布局 */
+        .content.collapsed * {
+            display: inline;
+            margin: 0;
+            padding: 0;
+			white-space: nowrap;
+        }
 
         .msg-footer {
             /* 视觉样式：背景、模糊、边框 */
@@ -344,6 +381,49 @@
         .cursor::after { content: '█'; animation: blink 1s step-end infinite; margin-left: 2px; color: var(--ai-msg-color); }
         @keyframes blink { 50% { opacity: 0; } }
 
+		/* --- Minimap (Right Sidebar) --- */
+        #minimap {
+            width: 80px;
+			background: transparent;
+			display: flex;
+			flex-direction: column;
+			flex-shrink: 0;
+			overflow-y: auto;
+			padding: 10px 8px;
+			gap: 6px;
+			position: absolute;
+			right: 7px;
+			top: 0;
+			bottom: 0;
+        }
+
+        /* 隐藏滚动条但保留功能 */
+        #minimap::-webkit-scrollbar { width: 0; }
+
+        .minimap-item {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .minimap-item:hover {
+            
+        }
+
+        /* 颜色映射，与主界面一致 */
+        .minimap-item.user { border-left-color: var(--user-msg-color); background: rgba(0, 255, 0, 0.05); }
+        .minimap-item.assistant { border-left-color: var(--ai-msg-color); background: rgba(255, 255, 255, 0.05); }
+        .minimap-item.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.05); }
+
+        /* 手机端隐藏小地图 */
+        @media (max-width: 1220px) {
+            #minimap { display: none; }
+        }
+
         ::-webkit-scrollbar { width: 7px; height: 7px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: #333; }
@@ -394,7 +474,7 @@
         /* 稍微区分一下标题等级 */
         .markdown-body h1 { font-size: 1.3em; border-bottom-color: #555; }
         .markdown-body h2 { font-size: 1.15em; }
-        .markdown-body h3 { font-size: 1.1em; border: none; } /* h3以下不要下划线，太乱 */
+        .markdown-body h3 { font-size: 1.1em; border: none; }
         .markdown-body h4 { font-size: 1em; border: none; }
 
 		.markdown-body p {
@@ -481,7 +561,7 @@
 
         /* 代码块：深色背景，无圆角 */
         .markdown-body pre {
-            background: #0d0d0d; /* 比气泡背景更深一点 */
+            background: #00000069;
             border: 1px solid #2a2a2a;
             padding: 10px;
             border-radius: 0px;
@@ -522,7 +602,7 @@
 
 		.hljs-addition, .hljs-bullet, .hljs-string, .hljs-symbol { color: #abe338; }
 
-		.hljs-function, .hljs-section, .hljs-title { color: #06dcdc; }
+		.hljs-function, .hljs-section, .hljs-title { color: #01e2e2; }
 
 		.hljs-keyword, .hljs-operator, .hljs-selector-tag { color: #d2a7da; }
 		
@@ -600,6 +680,8 @@
             </div>
         </div>
     </main>
+
+	<aside id="minimap"></aside>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
@@ -728,6 +810,7 @@
     const modelSelect = document.getElementById('model-select');
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
+	const minimap = document.getElementById('minimap');
 
     // --- State Management ---
     let chatHistory = [];
@@ -749,6 +832,40 @@
         const minute = d.getMinutes().toString().padStart(2, '0');
         return `${year}/${month}/${day} ${hour}:${minute}`;
     };
+
+	// --- Minimap Functions ---
+    
+    // 添加小方块
+    function addMinimapItem(role, id) {
+        const item = document.createElement('div');
+        item.className = `minimap-item ${role}`;
+        item.dataset.targetId = id; // 绑定对应消息的 ID
+        
+        // 点击滚动到对应消息
+        item.onclick = () => {
+            const target = document.getElementById(id);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // 短暂高亮目标消息
+                target.classList.add('highlight');
+                setTimeout(() => target.classList.remove('highlight'), 500);
+            }
+        };
+        
+        minimap.appendChild(item);
+        scrollToMinimapBottom();
+    }
+
+    // 移除小方块
+    function removeMinimapItem(id) {
+        const item = minimap.querySelector(`.minimap-item[data-target-id="${id}"]`);
+        if (item) item.remove();
+    }
+
+    // 小地图自动跟随底部
+    function scrollToMinimapBottom() {
+        minimap.scrollTop = minimap.scrollHeight;
+    }
 
     // --- Storage Logic (Wrapper around IDBManager) ---
     async function loadSessionsIndex() {
@@ -924,32 +1041,40 @@
     }
 
     async function switchSession(sessionId) {
-        if (isProcessing) return;
-        if (currentSessionId === sessionId && messageArea.innerHTML !== '') return; // 简单防抖
+		if (isProcessing) return;
+		if (currentSessionId === sessionId && messageArea.innerHTML !== '') return;
 
-        currentSessionId = sessionId;
-        const session = sessions.find(s => s.id === sessionId);
-        if (session) {
-            document.title = `[Chat] ${session.title}`;
-        }
-
-        try {
-            chatHistory = await IDBManager.getSessionMessages(sessionId);
-        } catch (e) {
-            chatHistory = [];
-        }
-        
-        messageArea.innerHTML = '';
-        
-        // 简化：直接把 content 传进去，appendMessageToDOM 会自己判断是渲染 MD 还是显示纯文本
-		for(const msg of chatHistory){
-            const els = appendMessageToDOM(msg.role, msg.content, msg.id, msg.model || null, false, msg.stats);
-            els.contentDiv.classList.remove('cursor');
+		currentSessionId = sessionId;
+		const session = sessions.find(s => s.id === sessionId);
+		if (session) {
+			document.title = `[Chat] ${session.title}`;
 		}
-        
-        renderSidebar();
-        scrollToBottom(true); // 切换会话时强制滚动到底部
-    }
+
+		try {
+			chatHistory = await IDBManager.getSessionMessages(sessionId);
+		} catch (e) {
+			chatHistory = [];
+		}
+		
+		messageArea.innerHTML = '';
+		minimap.innerHTML = '';
+		
+		for(const msg of chatHistory){
+			const els = appendMessageToDOM(
+				msg.role,
+				msg.content,
+				msg.id,
+				msg.model || null,
+				false,
+				msg.stats,
+				msg.isCollapsed,
+			);
+			els.contentDiv.classList.remove('cursor');
+		}
+		
+		renderSidebar();
+		scrollToBottom(true, true);
+	}
 
 	async function createIntroSession() {
 		const introId = 'sess_welcome'; // 固定 ID
@@ -1022,6 +1147,7 @@
         await saveCurrentSession();
 
         messageArea.innerHTML = '';
+		minimap.innerHTML = '';
         appendMessageToDOM('system', sysMsg.content, sysMsg.id, 'KERNEL_PROMPT');
         
         renderSidebar();
@@ -1214,14 +1340,24 @@
 
 				// 渲染前记录所有 details 的状态
 				const detailsOpenStateList = Array.from(uiElements.contentDiv.querySelectorAll('details')).map(d => d.open);
+				// 记录所有 pre 的滚动条状态
+				const preScrollTopList = Array.from(uiElements.contentDiv.querySelectorAll('pre')).map(pre => [pre.scrollLeft, pre.scrollTop]);
                 
 				// 渲染新内容
 				uiElements.contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullText));
 
 				// 恢复 details 的打开状态
 				const detailsList = uiElements.contentDiv.querySelectorAll('details');
-				for(let i = 0; i < detailsList.length; i++) {
+				for(let i = 0; i < detailsList.length; i++){
+					if(detailsOpenStateList[i] === undefined) continue;
 					detailsList[i].open = detailsOpenStateList[i];
+				}
+				// 恢复 pre 的滚动条状态
+				const preList = uiElements.contentDiv.querySelectorAll('pre');
+				for(let i = 0; i < preList.length; i++){
+					if(preScrollTopList[i] === undefined) continue;
+					preList[i].scrollLeft = preScrollTopList[i][0];
+					preList[i].scrollTop = preScrollTopList[i][1];
 				}
 
                 scrollToBottom();
@@ -1273,81 +1409,101 @@
         }
     }
 
-        function appendMessageToDOM(role, text, id, modelLabel = null, animate = true, stats = null) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${role}`;
-        if(animate) msgDiv.style.animation = 'fadeIn 0.3s ease';
-        msgDiv.id = id;
+    function appendMessageToDOM(role, text, id, modelLabel = null, animate = true, stats = null, isCollapsed = false) {
+		const msgDiv = document.createElement('div');
+		msgDiv.className = `message ${role}`;
+		if(animate) msgDiv.style.animation = 'fadeIn 0.3s ease';
+		msgDiv.id = id;
 
-        // 1. 确定默认状态
-        const isDefaultRendered = (role === 'assistant');
-        msgDiv.dataset.rendered = isDefaultRendered;
+		// 1. 确定默认状态
+		const isDefaultRendered = (role === 'assistant');
+		msgDiv.dataset.rendered = isDefaultRendered;
 
-        let displayLabel = role.toUpperCase();
-        if (role === 'assistant' && modelLabel) displayLabel = modelLabel.toUpperCase();
+		let displayLabel = role.toUpperCase();
+		if (role === 'assistant' && modelLabel) displayLabel = modelLabel.toUpperCase();
 
-        let regenBtn = '';
-        if (role === 'assistant') {
-            regenBtn = `<button class="action-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
-        } else if (role === 'user') {
-            regenBtn = `<button class="action-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
-        }
+		let regenBtn = '';
+		if (role === 'assistant') {
+			regenBtn = `<button class="action-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
+		} else if (role === 'user') {
+			regenBtn = `<button class="action-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
+		}
 
-        // 组合按钮：在 Regen 和 Del 之间添加 Fork
-        let buttonsHtml = `
-            <div class="left-actions">
-                ${regenBtn}
-                <button class="action-btn" onclick="forkSession('${id}')">[FORK]</button>
-                <button class="action-btn btn-del" onclick="confirmDeleteMsg('${id}')">[DEL]</button>
-            </div>
-        `;
+		let buttonsHtml = `
+			<div class="left-actions">
+				${regenBtn}
+				<button class="action-btn" onclick="forkSession('${id}')">[FORK]</button>
+				<button class="action-btn btn-del" onclick="confirmDeleteMsg('${id}')">[DEL]</button>
+			</div>
+		`;
 
-        const cursorClass = (role === 'assistant' && text === '') ? 'cursor' : '';
-        const editableState = isDefaultRendered ? 'false' : 'plaintext-only';
+		const cursorClass = (role === 'assistant' && text === '') ? 'cursor' : '';
+		const editableState = isDefaultRendered ? 'false' : 'plaintext-only';
 
-        const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isDefaultRendered ? '[RAW]' : '[RENDER]'}</button>`;
+		// --- [修改] --- 根据 isCollapsed 状态决定按钮文字
+		const collapseBtnText = isCollapsed ? '[+]' : '[-]';
+		const collapseBtn = `<button class="action-btn" onclick="toggleMessageCollapse('${id}', this)">${collapseBtnText}</button>`;
 
-        msgDiv.innerHTML = `
-            <span class="role-label">
-                <span>${displayLabel}</span>
-				${toggleBtn}
-            </span>
-            <div class="content markdown-body ${cursorClass}" contenteditable="${editableState}" spellcheck="false"></div>
-            <div class="msg-footer">
-                ${buttonsHtml}
-                <div class="meta-stats"></div>
-            </div>
-        `;
-        
-        const contentArea = msgDiv.querySelector('.content');
-        
-        if (isDefaultRendered) {
-            if (text) {
-                contentArea.innerHTML = DOMPurify.sanitize(marked.parse(text));
-            }
-        } else {
-            contentArea.textContent = text;
-        }
+		// --- [修改] --- 根据 isCollapsed 状态添加 CSS 类
+		const collapsedClass = isCollapsed ? 'collapsed' : '';
 
-        messageArea.appendChild(msgDiv);
-        if(animate) scrollToBottom();
+		const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isDefaultRendered ? '[RAW]' : '[RENDER]'}</button>`;
 
-        contentArea.addEventListener('input', () => {
-            if (msgDiv.dataset.rendered === 'false') {
-                const newText = contentArea.innerText;
-                updateHistoryContent(id, newText);
-            }
-        });
+		msgDiv.innerHTML = `
+			<span class="role-label">
+				<span>${displayLabel}</span>
+				<div class="role-header-right">
+					${toggleBtn}
+					${collapseBtn}
+				</div>
+			</span>
+			<!-- [修改] 添加 collapsedClass -->
+			<div class="content markdown-body ${cursorClass} ${collapsedClass}" contenteditable="${editableState}" spellcheck="false"></div>
+			<div class="msg-footer">
+				${buttonsHtml}
+				<div class="meta-stats"></div>
+			</div>
+		`;
+
+		msgDiv.querySelector('.content').addEventListener('click', function(event) {
+			// click 事件名修正 (原代码写的是 onclick，但在 addEventListener 中应为 click)
+			if(this.classList.contains('collapsed')){
+				toggleMessageCollapse(id, this.previousElementSibling.querySelector('.role-header-right button:last-child'));
+			}
+		});
+		
+		const contentArea = msgDiv.querySelector('.content');
+		
+		if (isDefaultRendered) {
+			if (text) {
+				contentArea.innerHTML = DOMPurify.sanitize(marked.parse(text));
+			}
+		} else {
+			contentArea.textContent = text;
+		}
+
+		messageArea.appendChild(msgDiv);
+
+		addMinimapItem(role, id);
+
+		if(animate) scrollToBottom();
+
+		contentArea.addEventListener('input', () => {
+			if (msgDiv.dataset.rendered === 'false') {
+				const newText = contentArea.innerText;
+				updateHistoryContent(id, newText);
+			}
+		});
 
 		if (stats) {
-            msgDiv.querySelector('.meta-stats').innerText = stats;
-        }
+			msgDiv.querySelector('.meta-stats').innerText = stats;
+		}
 
-        return {
-            contentDiv: contentArea,
-            metaDiv: msgDiv.querySelector('.meta-stats')
-        };
-    }
+		return {
+			contentDiv: contentArea,
+			metaDiv: msgDiv.querySelector('.meta-stats')
+		};
+	}
 
     async function updateHistoryContent(id, newText) {
         const item = chatHistory.find(m => m.id === id);
@@ -1418,6 +1574,35 @@
         }
     }
 
+    // --- 新增：折叠/展开消息 ---
+    window.toggleMessageCollapse = async function(id, btn) {
+		const msgDiv = document.getElementById(id);
+		if (!msgDiv) return;
+		
+		const contentDiv = msgDiv.querySelector('.content');
+		
+		// 切换 collapsed 类
+		contentDiv.classList.toggle('collapsed');
+		
+		// 更新按钮文本
+		const isCollapsed = contentDiv.classList.contains('collapsed');
+		
+		if (isCollapsed) {
+			btn.innerText = '[+]';
+		} else {
+			btn.innerText = '[-]';
+		}
+
+		// --- [新增] --- 保存状态到 IndexedDB
+		const msgIndex = chatHistory.findIndex(m => m.id === id);
+		if (msgIndex !== -1) {
+			// 更新内存中的状态
+			chatHistory[msgIndex].isCollapsed = isCollapsed;
+			// 保存到数据库
+			await saveCurrentSession();
+		}
+	}
+
 	window.regenerateResponseTo = async function(id) {
         if (isProcessing) return;
 
@@ -1486,6 +1671,7 @@
                 el.style.opacity = '0';
                 setTimeout(() => el.remove(), 200);
             }
+			removeMinimapItem(id);
             chatHistory = chatHistory.filter(item => item.id !== id);
             await saveCurrentSession();
         }
@@ -1547,10 +1733,16 @@
         isAutoScroll = rightPanel.scrollTop + rightPanel.clientHeight >= rightPanel.scrollHeight - threshold;
     });
 
-    function scrollToBottom(force = false) {
+    function scrollToBottom(force = false, delay = false) {
 		if(force) isAutoScroll = true;
 		if(!isAutoScroll) return;
         rightPanel.scrollTop = rightPanel.scrollHeight;
+		// 用于解决 content-visibility: auto; 导致滚动失效的问题
+		if(delay){
+			setTimeout(() => {
+				rightPanel.scrollTop = rightPanel.scrollHeight;
+			}, 1);
+		}
     }
 </script>
 
