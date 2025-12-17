@@ -1325,7 +1325,7 @@
     async function updateSessionTitleIfNeeded(userText) {
         const session = sessions.find(s => s.id === currentSessionId);
         if (session && session.title === '') {
-            session.title = userText.trim().substring(0, 32).replace(/[\r\n]/g, ' ');
+            session.title = userText.trim().substring(0, 32).replace(/\s+/g, ' ');
             await saveSessionMetaLocal(session);
 			updateTitle(session.title);All
         }
