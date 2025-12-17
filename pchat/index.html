@@ -411,6 +411,7 @@
         #minimap {
             width: 70px;
 			background: transparent;
+			opacity: 0.85;
 			display: flex;
 			flex-direction: column;
 			flex-shrink: 0;
@@ -506,6 +507,11 @@
         .markdown-body h3 { font-size: 1.1em; border: none; }
         .markdown-body h4 { font-size: 1em; border: none; }
 
+		.markdown-body.collapsed h1,
+		.markdown-body.collapsed h2 {
+            border: none;
+        }
+
 		.markdown-body p {
             margin: 0.8em 0;
         }
@@ -543,6 +549,12 @@
             margin: 15px 0;
             border: none;
             border-top: 1px dashed #333;
+        }
+		
+		.markdown-body.collapsed hr,
+		.markdown-body.collapsed br {
+			display: none;
+            border: none;
         }
 
         /* 引用块：更融合背景 */
