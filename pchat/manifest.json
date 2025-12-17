@@ -3,7 +3,7 @@
 	"short_name": "pChat",
 	"display": "standalone",
 	"id": "/",
-	"start_url": "https://ipacel.cc/pchat/",
+	"start_url": "https://pchat.ipacel.cc/",
 	"theme_color": "#202124",
 	"background_color": "#0d1118",
 	"icons": [
