@@ -269,7 +269,7 @@
 
         .role-label {
             position: sticky;
-            top: 0;
+            top: -2px;
             z-index: 100;
             background: rgba(13, 13, 13, 0.95);
             backdrop-filter: blur(5px);
@@ -659,11 +659,9 @@
 		}
 
 		@media (max-width: 970px) {
-
 			#minimap {
 				right: -100px;
 			}
-
 			#sidebar-toggle:checked ~ #chat-container #minimap {
                 right: 7px;
             }
@@ -681,7 +679,6 @@
 				box-shadow: 10px 0 20px rgba(0,0,0,0.8);
 				transition: left 0.3s;
 			}
-
 			#sidebar-toggle:checked ~ #chat-container #sidebar {
 				left: 0;
 			}
@@ -689,6 +686,12 @@
 			header h1 { display: none; }
 
 			#model-select { width: 100%; }
+		}
+
+		@media (min-width: 1800px) {
+			#right-panel {
+				padding-right: 200px;
+			}
 		}
 
     </style>
