@@ -1515,8 +1515,15 @@
             });
 
             // 2. 循环处理流数据
+			let isRendering = 0;
 			let think = false;
             for await (const part of response) {
+
+				// 延迟渲染, 防止卡顿
+				if(isRendering > 1) continue;
+				while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 100));
+				isRendering += 1;
+
                 // 处理不同输出
 				if(part.type === 'reasoning'){
 					// 添加思考折叠框
@@ -1556,6 +1563,11 @@
 					},
 				});
 
+				// 等待浏览器刷新一帧
+				requestAnimationFrame(() => {
+					isRendering -= 1;
+				});
+				
                 scrollToBottom();
             }
 
