@@ -1325,8 +1325,9 @@
     async function updateSessionTitleIfNeeded(userText) {
         const session = sessions.find(s => s.id === currentSessionId);
         if (session && session.title === '') {
-            session.title = userText.trim().substring(0, 32).replaceAll(/[\r\n]/g, ' ');
+            session.title = userText.trim().substring(0, 32).replace(/[\r\n]/g, ' ');
             await saveSessionMetaLocal(session);
+			updateTitle(session.title);All
         }
     }
 
@@ -1441,7 +1442,8 @@
     sendBtn.addEventListener('click', () => handleSend());
 
     async function handleSend() {
-        const text = userInput.value.trim();
+		// 删除字符串开头的换行和末尾的空白字符 (防止删除缩进)
+        const text = userInput.value.replace(/^\s*\n+|\s+$/g, '');
         if (!text || isProcessing) return;
         
         userInput.value = '';
