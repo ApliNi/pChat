@@ -1248,6 +1248,7 @@
 			{
 				role: 'system',
 				id: 'msg_system_intro',
+				isCollapsed: false,
 				content: `
 # [ Puter.js AI Chat Terminal ]
 
@@ -1286,8 +1287,7 @@
 ---
 
 注意: 这个欢迎会话始终自动重置.
-
-`,			},
+`.trim(),	},
 		];
 
 		// 3. 强制写入/覆盖到数据库 (IndexedDB)
