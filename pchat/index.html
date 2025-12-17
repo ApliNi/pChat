@@ -55,6 +55,7 @@
             flex-direction: column;
             font-size: 13px;
             overflow: hidden;
+			tab-size: 4;
         }
 
         /* --- Global Header --- */
@@ -1099,23 +1100,21 @@
 	}
 
 	async function createIntroSession() {
-		const introId = 'sess_welcome'; // 固定 ID
-		const timestamp = Date.now();
 
 		// 1. 定义欢迎会话的元数据
 		const introSession = {
-			id: introId,
-			title: 'Instructions for use 👋',
-			timestamp: timestamp
+			id: 'sess_welcome', // 固定 ID
+			title: 'Welcome 👋',
+			timestamp: 0,
 		};
 
 		// 2. 定义预设的聊天记录
 		const introMessages = [
 			{
 				role: 'system',
-				id: 'msg_sys_intro',
+				id: 'msg_system_intro',
 				content: `
-[ Puter.js AI Chat Terminal ]
+# [ Puter.js AI Chat Terminal ]
 
 这是一个基于 Puter.js 的本地化 AI 聊天终端.
 
@@ -1125,11 +1124,14 @@
 
 ## 界面
 - 模型切换: 点击右上角下拉菜单切换模型.
-- 会话管理: 左侧侧边栏选择支持 切换/新建/删除, 双击或长按标题可重命名.
+- 会话管理: 左侧边栏选择支持 新建/切换/删除, 双击或长按标题可重命名.
 - 小地图: 界面右侧的小地图可以快速定位到消息位置.
 
 ## 消息框
-- 身份显示: 系统提示词显示为 SYSTEM (蓝色消息框), 用户消息显示为 USER (绿色消息框), AI 消息显示为对应模型的名称 (灰色消息框).
+- 身份显示:
+	- 系统提示词显示为 SYSTEM (蓝色消息框)
+	- 用户消息显示为 USER (绿色消息框)
+	- AI 消息显示为对应模型的名称 (灰色消息框).
 - 切换格式: 点击右上角 [RENDER] / [RAW] 切换渲染消息或原始内容.
 - 折叠消息: 点击右上角 [+] / [-] 切换折叠消息, 同时小地图中的对应消息框会变为半透明.
 - 重新生成: 点击左下角 [REGEN] 按钮重新生成 AI 消息.
@@ -1144,18 +1146,17 @@
 - [GitHub](https://github.com/ApliNi/Puter.js-AI-Chat-Terminal)
 - [Puter.js](https://github.com/heyPuter/puter)
 
-`,
-			},
+---
+
+注意: 这个欢迎会话始终自动重置.
+
+`,			},
 		];
 
-		// 3. 保存到数据库和内存
-		// 注意：这里手动更新内存和DB，不调用 createNewSession 以免逻辑冲突
-		await saveSessionMetaLocal(introSession);
-		await IDBManager.saveSessionMessages(introId, introMessages);
-
-		// 4. 切换到该会话
-		// 由于 saveSessionMetaLocal 已经更新了 sessions 数组，直接 switch 即可
-		await switchSession(introId);
+		// 3. 强制写入/覆盖到数据库 (IndexedDB)
+        // 注意：这里不更新内存中的 sessions 数组，因为稍后 loadSessionsIndex 会统一加载
+        await IDBManager.saveSessionMeta(introSession);
+        await IDBManager.saveSessionMessages(introSession.id, introMessages);
 	}
 
     async function createNewSession() {
@@ -1202,31 +1203,37 @@
     // --- Initialization ---
     window.addEventListener('DOMContentLoaded', async () => {
         await IDBManager.init();
-		// 异步加载模型
+        
+        // 异步加载模型
         loadModels();
 
+        // [修改] 1. 每次启动时，强制重置欢迎会话的内容到数据库
+        await createIntroSession();
+
+        // [修改] 2. 从数据库加载所有会话列表 (此时必定包含刚刚写入的 welcome 会话)
         await loadSessionsIndex();
 
-        // [修改] 恢复上次会话逻辑
-        if (sessions.length > 0) {
-            // 1. 获取上次保存的 ID
-            const lastId = localStorage.getItem('puter_last_session_id');
-            // 2. 检查该 ID 是否还存在于当前的会话列表中
-            const lastSessionExists = sessions.some(s => s.id === lastId);
+        // [修改] 3. 恢复上次会话逻辑
+        // 获取上次保存的 ID
+        let lastId = localStorage.getItem('puter_last_session_id');
 
-            if (lastSessionExists) {
-                // 如果存在，加载上次的会话
-                await switchSession(lastId);
-            } else {
-                // 如果不存在（或从未保存过），加载时间最近的一个
-                const lastSession = sessions.sort((a, b) => b.timestamp - a.timestamp)[0];
-                await switchSession(lastSession.id);
-            }
+        // 检查该 ID 是否还存在于当前的会话列表中
+        const lastSessionExists = sessions.some(s => s.id === lastId);
+
+        if (lastSessionExists) {
+            // 如果上次的会话还存在，加载上次的
+            await switchSession(lastId);
         } else {
-            await createIntroSession();
-            // IntroSession 创建后会自动切换，所以这里不需要手动 switch
-            // 但如果用户删除了 Intro，这里需要保底
-            if (!currentSessionId) await createNewSession();
+            // 如果不存在（或是第一次来），加载时间最近的一个（通常就是刚刚创建的 Welcome）
+            // 或者是列表中的第一个
+            if (sessions.length > 0) {
+                 // 重新排序确保选中最新的
+                const sorted = sessions.sort((a, b) => b.timestamp - a.timestamp);
+                await switchSession(sorted[0].id);
+            } else {
+                // 理论上不会走到这里，因为 createIntroSession 保证了至少有一个会话
+                await createNewSession();
+            }
         }
     });
 
