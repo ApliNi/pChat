@@ -40,6 +40,11 @@
 - [MarkedKatex](https://github.com/UziTech/marked-katex-extension) - Markdown LaTeX 公式渲染
 - [Morphdom](https://github.com/patrick-steele-idem/morphdom) - DOM 差异更新
 
+## 字体
+- [HarmonyOS Sans](https://developer.huawei.com/consumer/cn/doc/design-guides-V1/font-0000001157868583-V1) - 全局中文字体
+- [JetBrainsMono](https://www.jetbrains.com/lp/mono/) - 全局等宽字体
+- [Ubuntu](https://design.ubuntu.com/font) - 标题字体
+
 ## 开源
 - GitHub: [pChat](https://github.com/ApliNi/pChat)
 - Author: [ApliNi](https://github.com/ApliNi)
