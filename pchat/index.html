@@ -1274,8 +1274,8 @@
 - 本地存储: 所有聊天记录通过 IndexedDB 存储在浏览器本地, 除 AI 推理外, 不上传到任何服务器.
 
 ## 界面
-- 模型切换: 点击右上角下拉菜单切换模型.
-- 会话管理: 左侧边栏选择支持 新建/切换/删除, 双击或长按标题可重命名.
+- 模型切换: 点击右上角下拉菜单切换模型. 记忆上次使用的模型.
+- 会话管理: 左侧边栏选择支持 新建/切换/删除, 双击或长按标题可重命名. 记忆上次打开的会话.
 - 导入导出: 点击左侧边栏下方的 [IMPORT] / [EXPORT] 按钮导出导出数据, 导入支持合并会话.
 - 置顶窗口: 点击左侧边栏下方的 [PIP] 按钮打开画中画窗口.
 - 小地图: 界面右侧的小地图可以快速定位到消息位置.
@@ -1293,11 +1293,23 @@
 
 ## 消息渲染
 - 默认仅自动渲染 AI 消息.
+- 折叠的消息将在打开时渲染.
+- 记忆每条消息的渲染和折叠状态.
 - 思考模型的思考内容渲染在蓝色 [THINK] 折叠框内.
 
-## 开源
-- [GitHub](https://github.com/ApliNi/Puter.js-AI-Chat-Terminal)
+## 前端库
 - [Puter.js](https://github.com/heyPuter/puter)
+- [DOMPurify](https://github.com/cure53/DOMPurify)
+- [Highlight.js](https://github.com/highlightjs/highlight.js)
+- [KaTeX](https://github.com/KaTeX/KaTeX)
+- [Marked](https://github.com/markedjs/marked)
+- [MarkedHighlight](https://github.com/markedjs/marked-highlight)
+- [MarkedKatex](https://github.com/UziTech/marked-katex-extension)
+- [Morphdom](https://github.com/patrick-steele-idem/morphdom)
+
+## 开源
+- GitHub: [pChat](https://github.com/ApliNi/pChat)
+- Author: [ApliNi](https://github.com/ApliNi)
 
 ---
 
