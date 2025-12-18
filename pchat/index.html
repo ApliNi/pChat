@@ -1737,8 +1737,15 @@ You are a helpful coding assistant. Answer concisely.
 		const contentArea = msgDiv.querySelector('.content');
 		
 		if (isRendered) {
-			if (content) {
-				contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content));
+			if (isCollapsed) {
+				// 延迟渲染折叠的消息
+				contentArea.textContent = content;
+				contentArea.dataset.lazy = 'true';
+			} else {
+				// 立即渲染未折叠的消息
+				if (content) {
+					contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content));
+				}
 			}
 		} else {
 			contentArea.textContent = content;
@@ -1850,18 +1857,22 @@ You are a helpful coding assistant. Answer concisely.
 		// 切换 collapsed 类
 		contentDiv.classList.toggle('collapsed');
 		
-		// 更新按钮文本
-		const isCollapsed = contentDiv.classList.contains('collapsed');
-		
-		if (isCollapsed) {
-			btn.innerText = '[+]';
-		} else {
-			btn.innerText = '[-]';
-		}
+        const msgItem = chatHistory.find(m => m.id === id);
+		msgItem.isCollapsed = contentDiv.classList.contains('collapsed');
+
+		// 延迟渲染
+        if (!msgItem.isCollapsed && !msgItem.isRaw && contentDiv.dataset.lazy === 'true') {
+			// 从内存或 dom 中得到消息原始内容
+            const rawText = msgItem ? msgItem.content : contentDiv.textContent;
+            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
+            contentDiv.dataset.lazy = 'false';
+        }
+
+		btn.innerText = msgItem.isCollapsed ? '[+]' : '[-]';
 
 		const minimapItem = document.querySelector(`.minimap-item[data-target-id="${id}"]`);
         if (minimapItem) {
-            if (isCollapsed) {
+            if (msgItem.isCollapsed) {
                 minimapItem.classList.add('collapsed');
             } else {
                 minimapItem.classList.remove('collapsed');
@@ -1869,13 +1880,7 @@ You are a helpful coding assistant. Answer concisely.
         }
 
 		// 保存状态到 IndexedDB
-		const msgIndex = chatHistory.findIndex(m => m.id === id);
-		if (msgIndex !== -1) {
-			// 更新内存中的状态
-			chatHistory[msgIndex].isCollapsed = isCollapsed;
-			// 保存到数据库
-			await saveCurrentSession();
-		}
+		await saveCurrentSession();
 	}
 
 	window.regenerateResponseTo = async function(id) {
