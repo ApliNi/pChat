@@ -535,6 +535,10 @@
 			color: var(--meta-color);
 		}
 
+		.markdown-body ul > li::marker {
+			font-size: initial;
+		}
+
 		.markdown-body li > p {
             margin: 4px 0;
         }
@@ -626,6 +630,16 @@
             white-space: pre;
             font-size: 12px; /* 代码稍微小一点 */
         }
+
+		.markdown-body input {
+			appearance: none;
+			border-radius: 0;
+			width: 12px;
+			height: 12px;
+			margin-bottom: -1.5px !important;
+			border: 2px double var(--meta-color);
+		}
+		.markdown-body input:checked { border: 6px double var(--meta-color); }
 
 		/* 最后一个元素不添加 margin-bottom */
 		.markdown-body > *:last-child,
