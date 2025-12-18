@@ -825,18 +825,8 @@
 	};
 
 	DOMPurify.addHook('uponSanitizeElement', (currentNode, data, config) => {
-		
-		const isAllowed = data.allowedTags[data.tagName] === true;
-
-		if (!isAllowed) {
-			console.log(currentNode);
-			const originalHTML = currentNode.outerHTML;
-			
-			const textNode = document.createTextNode(originalHTML);
-			
-			if (currentNode.parentNode) {
-				currentNode.parentNode.replaceChild(textNode, currentNode);
-			}
+		if (currentNode.parentNode && data.allowedTags[data.tagName] !== true) {
+			currentNode.parentNode.replaceChild(document.createTextNode(currentNode.outerHTML), currentNode);
 		}
 	});
 
