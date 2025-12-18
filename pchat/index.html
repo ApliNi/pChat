@@ -258,6 +258,7 @@
 		.message:last-child {
 			content-visibility: visible !important;
 			contain: none !important;
+			margin-bottom: 2px;
 		}
 
         .message.user { border-left-color: var(--user-msg-color); background: rgba(0, 255, 0, 0.02); }
@@ -305,7 +306,8 @@
 
         /* 折叠后的内容样式 */
         .content.collapsed {
-            height: 20px;
+            height: 19px;
+			line-height: 19px;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
@@ -372,14 +374,14 @@
         /* --- Input Area --- */
         #input-container {
 			position: sticky;
-			bottom: -1px;
+			bottom: 0;
 			left: 0;
 			right: 0;
 			z-index: 300;
             flex-shrink: 0;
             padding: 20px 20px 40px 20px;
             background: var(--bg-color);
-            border-top: 1px solid transparent;
+			outline: 1px solid var(--bg-color);
         }
 
         .input-group {
@@ -1301,6 +1303,7 @@
 ---
 
 注意: 这个欢迎会话始终自动重置.
+> 点击左上角 [ + NEW SESSION ] 创建一个新会话.
 `.trim(),	},
 		];
 
