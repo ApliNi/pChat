@@ -636,7 +636,7 @@
 			border-radius: 0;
 			width: 12px;
 			height: 12px;
-			margin-bottom: -1.5px !important;
+			margin-bottom: -1px !important;
 			border: 2px double var(--meta-color);
 		}
 		.markdown-body input:checked { border: 6px double var(--meta-color); }
@@ -1319,7 +1319,8 @@
 			isCollapsed: true,
             content: `
 ## Format
-- Use \`\\n\\n$$ ... $$\\n\` to display a block-level formula.
+- All block tokens should have a blank line before and after them.
+- Use \`\\n\\n$$ ... $$\\n\\n\` to display a block-level LaTeX formula.
 ---
 You are a helpful coding assistant. Answer concisely.
 `.trim(),
