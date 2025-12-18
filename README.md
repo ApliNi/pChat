@@ -2,6 +2,8 @@
 
 这是一个基于 Puter.js 的本地化 AI 聊天终端.
 
+<img width="1253" height="948" alt="image" src="https://github.com/user-attachments/assets/0ed804e4-0eeb-485e-805f-e269848e67f9" />
+
 ## 特性
 - 免费: 无需注册, 无需登录, 无需支付, 通过 Puter.js 提供完全免费的服务.
 - 本地存储: 所有聊天记录通过 IndexedDB 存储在浏览器本地, 除 AI 推理外, 不上传到任何服务器.
