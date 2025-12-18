@@ -1474,29 +1474,34 @@ You are a helpful coding assistant. Answer concisely.
     sendBtn.addEventListener('click', () => handleSend());
 
     async function handleSend() {
-		// 删除字符串开头的换行和末尾的空白字符 (防止删除缩进)
-        const text = userInput.value.replace(/^\s*\n+|\s+$/g, '');
-        if (!text || isProcessing) return;
-        
-        userInput.value = '';
-        userInput.style.height = '0px';
+		try{
+			// 删除字符串开头的换行和末尾的空白字符 (防止删除缩进)
+			const text = userInput.value.replace(/^\s*\n+|\s+$/g, '');
+			if (!text || isProcessing) return;
+			
+			userInput.value = '';
+			userInput.style.height = '0px';
 
-        await updateSessionTitleIfNeeded(text);
+			await updateSessionTitleIfNeeded(text);
 
-        const userMsgId = generateId();
-        const userMsg = { role: 'user', content: text, id: userMsgId };
-        chatHistory.push(userMsg);
-		appendMessageToDOM({ role: 'user', content: text, id: userMsgId });
+			const userMsgId = generateId();
+			const userMsg = { role: 'user', content: text, id: userMsgId };
+			chatHistory.push(userMsg);
+			appendMessageToDOM({ role: 'user', content: text, id: userMsgId });
 
-		setTimeout(() => {
-			rightPanel.scrollTo({
-				top: rightPanel.scrollHeight,
-				behavior: 'smooth',
-			});
-		}, 50);
+			await saveCurrentSession();
+			// 不等待 AI 回复
+			performAIRequest();
 
-        await saveCurrentSession();
-        await performAIRequest();
+		}finally{
+			// 不输入内容也滚动到底部
+			setTimeout(() => {
+				rightPanel.scrollTo({
+					top: rightPanel.scrollHeight,
+					behavior: 'smooth',
+				});
+			}, 1);
+		}
     }
 
 	async function performAIRequest(targetId = null) {
