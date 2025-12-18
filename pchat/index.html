@@ -1493,6 +1493,9 @@ You are a helpful coding assistant. Answer concisely.
 			// 不等待 AI 回复
 			performAIRequest();
 
+		}catch(err){
+			console.error(err);
+			
 		}finally{
 			// 不输入内容也滚动到底部
 			setTimeout(() => {
