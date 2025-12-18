@@ -820,18 +820,35 @@
 
 	marked.use(markedKatex({ throwOnError: false, nonStandard: true }));
 
-    marked.use({
-		// 将 HTML 视为文本
-		renderer: {
-			// 防止 DOMPurify 直接删除 HTML 文本
-			html({ text }){
-				return text.replace(/&/g, '&amp;')
-						.replace(/</g, '&lt;')
-						.replace(/>/g, '&gt;')
-						.replace(/"/g, '&quot;')
-						.replace(/'/g, '&#039;');
-			},
-		},
+	const DOMPurifyConfig = {
+		IN_PLACE: true,
+	};
+
+	DOMPurify.addHook('uponSanitizeElement', (currentNode, data, config) => {
+		
+		const isAllowed = data.allowedTags[data.tagName] === true;
+
+		if (!isAllowed) {
+			console.log(currentNode);
+			const originalHTML = currentNode.outerHTML;
+			
+			const textNode = document.createTextNode(originalHTML);
+			
+			if (currentNode.parentNode) {
+				currentNode.parentNode.replaceChild(textNode, currentNode);
+			}
+		}
+	});
+
+	DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+		// set all elements owning target to target=_blank
+		if ('target' in node) {
+			node.setAttribute('target', '_blank');
+		}
+		// set non-HTML/MathML links to xlink:show=new
+		if (!node.hasAttribute('target') && (node.hasAttribute('xlink:href') || node.hasAttribute('href'))) {
+			node.setAttribute('xlink:show', 'new');
+		}
 	});
 
     // --- IndexedDB Manager ---
@@ -1602,7 +1619,7 @@ You are a helpful coding assistant. Answer concisely.
 				}
 
 				// 渲染新内容
-				const newHtmlContent = DOMPurify.sanitize(marked.parse(fullText));
+				const newHtmlContent = DOMPurify.sanitize(marked.parse(fullText), DOMPurifyConfig);
 				morphdom(uiElements.contentDiv, `<div>${newHtmlContent}</div>`, {
 					childrenOnly: true,
 					onBeforeElUpdated: (from, to) => {
@@ -1755,7 +1772,7 @@ You are a helpful coding assistant. Answer concisely.
 			} else {
 				// 立即渲染未折叠的消息
 				if (content) {
-					contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content));
+					contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content), DOMPurifyConfig);
 				}
 			}
 		} else {
@@ -1842,7 +1859,7 @@ You are a helpful coding assistant. Answer concisely.
             }
 
             // 3. 渲染 Markdown
-            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentRawText));
+            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentRawText), DOMPurifyConfig);
             
             // 4. 禁止编辑 (渲染后的 HTML 不适合直接编辑)
             contentDiv.contentEditable = 'false';
@@ -1875,7 +1892,7 @@ You are a helpful coding assistant. Answer concisely.
         if (!msgItem.isCollapsed && !msgItem.isRaw && contentDiv.dataset.lazy === 'true') {
 			// 从内存或 dom 中得到消息原始内容
             const rawText = msgItem ? msgItem.content : contentDiv.textContent;
-            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(rawText));
+            contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(rawText), DOMPurifyConfig);
             contentDiv.dataset.lazy = 'false';
         }
 
