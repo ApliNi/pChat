@@ -1265,6 +1265,7 @@
 				role: 'system',
 				id: 'msg_system_intro',
 				isCollapsed: false,
+				isRaw: false,
 				content: `
 # [ Puter.js AI Chat Terminal ]
 
@@ -1495,7 +1496,7 @@ You are a helpful coding assistant. Answer concisely.
 
 		}catch(err){
 			console.error(err);
-			
+
 		}finally{
 			// 不输入内容也滚动到底部
 			setTimeout(() => {
@@ -1667,15 +1668,21 @@ You are a helpful coding assistant. Answer concisely.
         animate = true,
         stats = null,
         isCollapsed = false,
+		isRaw = undefined,
 	}) {
 		const msgDiv = document.createElement('div');
 		msgDiv.className = `message ${role}`;
 		if(animate) msgDiv.style.animation = 'fadeIn 0.3s ease';
 		msgDiv.id = id;
 
-		// 1. 确定默认状态
-		const isDefaultRendered = (role === 'assistant');
-		msgDiv.dataset.rendered = isDefaultRendered;
+		// 默认仅渲染 AI 消息
+		let isRendered;
+		if (isRaw !== undefined) {
+			isRendered = !isRaw;
+		} else {
+			isRendered = (role === 'assistant');
+		}
+		msgDiv.dataset.rendered = isRendered;
 
 		let displayLabel = role.toUpperCase();
 		if (role === 'assistant' && model) displayLabel = model.toUpperCase();
@@ -1695,9 +1702,6 @@ You are a helpful coding assistant. Answer concisely.
 			</div>
 		`;
 
-		const cursorClass = (role === 'assistant' && content === '') ? 'cursor' : '';
-		const editableState = isDefaultRendered ? 'false' : 'plaintext-only';
-
 		// --- [修改] --- 根据 isCollapsed 状态决定按钮文字
 		const collapseBtnText = isCollapsed ? '[+]' : '[-]';
 		const collapseBtn = `<button class="action-btn" onclick="toggleMessageCollapse('${id}', this)">${collapseBtnText}</button>`;
@@ -1705,7 +1709,7 @@ You are a helpful coding assistant. Answer concisely.
 		// --- [修改] --- 根据 isCollapsed 状态添加 CSS 类
 		const collapsedClass = isCollapsed ? 'collapsed' : '';
 
-		const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isDefaultRendered ? '[RAW]' : '[RENDER]'}</button>`;
+		const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isRendered ? '[RAW]' : '[RENDER]'}</button>`;
 
 		msgDiv.innerHTML = `
 			<span class="role-label">
@@ -1716,7 +1720,7 @@ You are a helpful coding assistant. Answer concisely.
 				</div>
 			</span>
 			<!-- [修改] 添加 collapsedClass -->
-			<div class="content markdown-body ${cursorClass} ${collapsedClass}" contenteditable="${editableState}" spellcheck="false"></div>
+			<div class="content markdown-body ${(role === 'assistant' && content === '') ? 'cursor' : ''} ${collapsedClass}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
 				<div class="meta-stats"></div>
@@ -1732,7 +1736,7 @@ You are a helpful coding assistant. Answer concisely.
 		
 		const contentArea = msgDiv.querySelector('.content');
 		
-		if (isDefaultRendered) {
+		if (isRendered) {
 			if (content) {
 				contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content));
 			}
@@ -1776,7 +1780,7 @@ You are a helpful coding assistant. Answer concisely.
         performAIRequest(id);
     }
 
-	window.toggleMessageView = function(id) {
+	window.toggleMessageView = async function(id) {
         // 如果正在生成回复，暂不建议切换，防止流式传输冲突（可选限制）
         if (isProcessing) return;
 
@@ -1830,6 +1834,10 @@ You are a helpful coding assistant. Answer concisely.
             // 6. 更新按钮文本
             toggleBtn.innerText = '[RAW]';
         }
+
+		// 保存渲染切换状态
+		msgItem.isRaw = isRendered;
+		await saveCurrentSession();
     }
 
     // --- 新增：折叠/展开消息 ---
