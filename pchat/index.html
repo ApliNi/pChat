@@ -320,7 +320,6 @@
         .content.collapsed * {
             display: inline;
             margin: 0;
-            padding: 0;
 			white-space: nowrap;
         }
 
@@ -1702,25 +1701,16 @@ You are a helpful coding assistant. Answer concisely.
 			</div>
 		`;
 
-		// --- [修改] --- 根据 isCollapsed 状态决定按钮文字
-		const collapseBtnText = isCollapsed ? '[+]' : '[-]';
-		const collapseBtn = `<button class="action-btn" onclick="toggleMessageCollapse('${id}', this)">${collapseBtnText}</button>`;
-
-		// --- [修改] --- 根据 isCollapsed 状态添加 CSS 类
-		const collapsedClass = isCollapsed ? 'collapsed' : '';
-
-		const toggleBtn = `<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isRendered ? '[RAW]' : '[RENDER]'}</button>`;
-
 		msgDiv.innerHTML = `
 			<span class="role-label">
 				<span>${displayLabel}</span>
 				<div class="role-header-right">
-					${toggleBtn}
-					${collapseBtn}
+					${`<button class="action-btn btn-toggle" onclick="toggleMessageView('${id}')">${isRendered ? '[RAW]' : '[RENDER]'}</button>`}
+					${`<button class="action-btn btn-collapse" onclick="toggleMessageCollapse('${id}', this)" data-is-collapsed="${isCollapsed}">${isCollapsed ? '[+]' : '[-]'}</button>`}
 				</div>
 			</span>
 			<!-- [修改] 添加 collapsedClass -->
-			<div class="content markdown-body ${(role === 'assistant' && content === '') ? 'cursor' : ''} ${collapsedClass}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
+			<div class="content markdown-body ${(role === 'assistant' && content === '') ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
 				<div class="meta-stats"></div>
@@ -1730,7 +1720,7 @@ You are a helpful coding assistant. Answer concisely.
 		msgDiv.querySelector('.content').addEventListener('click', function(event) {
 			// click 事件名修正 (原代码写的是 onclick，但在 addEventListener 中应为 click)
 			if(this.classList.contains('collapsed')){
-				toggleMessageCollapse(id, this.previousElementSibling.querySelector('.role-header-right button:last-child'));
+				toggleMessageCollapse(id, msgDiv.querySelector('.role-header-right .btn-collapse'));
 			}
 		});
 		
@@ -1869,6 +1859,7 @@ You are a helpful coding assistant. Answer concisely.
         }
 
 		btn.innerText = msgItem.isCollapsed ? '[+]' : '[-]';
+		btn.dataset.isCollapsed = msgItem.isCollapsed;
 
 		const minimapItem = document.querySelector(`.minimap-item[data-target-id="${id}"]`);
         if (minimapItem) {
