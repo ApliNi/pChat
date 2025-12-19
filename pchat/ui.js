@@ -503,6 +503,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 		
 		renderSidebar(true);
 
+		// 震动反馈
+		if (navigator.vibrate) navigator.vibrate(50);
+
 		// 欢迎会话不滚动到底部
 		if(id !== 'sess_welcome'){
 			scrollToBottom(true, true);
@@ -594,7 +597,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 注意: 这个欢迎会话始终自动重置.
 > 点击左上角 \`[ + NEW SESSION ]\` 创建一个新会话.
-	`.trim(),	},
+`.trim(),	},
 		];
 
 		// 3. 强制写入/覆盖到数据库 (IndexedDB)
@@ -643,6 +646,9 @@ You are a helpful coding assistant. Answer concisely.
 		renderSidebar();
 		userInput.focus();
 		updateTitle('New Session');
+
+		// 震动反馈
+		if (navigator.vibrate) navigator.vibrate(50);
 	}
 
 	async function updateSessionTitleIfNeeded(userText) {
@@ -852,6 +858,9 @@ You are a helpful coding assistant. Answer concisely.
 			// [修改] 定义统计文本变量
 			const statsText = `Time: ${duration}s | ${tps} Token/s`;
 			uiElements.metaDiv.innerText = statsText;
+
+			// 震动反馈
+			if (navigator.vibrate) navigator.vibrate(100);
 
 			// 4. 更新内存中的历史记录
 			if (targetId) {
