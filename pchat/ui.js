@@ -572,9 +572,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 - [JetBrainsMono](https://www.jetbrains.com/lp/mono/) - 全局等宽字体
 - [Ubuntu](https://design.ubuntu.com/font) - 标题字体
 
-## 旧版本
-- [db_v1](https://pchat.ipacel.cc/old.html) - 如果遇到数据库问题, 请尝试使用这个旧版本导出数据.
-
 ## 开源
 - GitHub: [pChat](https://github.com/ApliNi/pChat)
 - Author: [ApliNi](https://github.com/ApliNi)
