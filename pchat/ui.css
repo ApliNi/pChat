@@ -574,14 +574,11 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .markdown-body.collapsed hr,
 .markdown-body.collapsed br {
 	display: none;
-	border: none;
 }
 
 .markdown-body hr:has(+ table),
-.markdown-body hr:has(+ pre) {
-	display: none;
-}
 .markdown-body table + hr,
+.markdown-body hr:has(+ pre),
 .markdown-body pre + hr {
 	display: none;
 }
@@ -653,6 +650,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	overflow-y: auto;
 	margin: 0.8em 0;
 	max-height: 444px;
+	outline: none;
 }
 
 .markdown-body pre code {

@@ -36,6 +36,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 	const DOMPurifyConfig = {
 		IN_PLACE: true,
+		// RETURN_DOM_FRAGMENT: true,
 	};
 
 	DOMPurify.addHook('uponSanitizeElement', (currentNode, data, config) => {
@@ -49,6 +50,16 @@ window.addEventListener('DOMContentLoaded', async () => {
 		if ('target' in node) node.setAttribute('target', '_blank');
 		if (!node.hasAttribute('target') && (node.hasAttribute('xlink:href') || node.hasAttribute('href'))) {
 			node.setAttribute('xlink:show', 'new');
+		}
+	});
+
+	// PRE 添加只读属性
+	DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+		if (node.tagName === 'PRE') {
+			// 允许光标选择和全选
+			node.setAttribute('contenteditable', 'plaintext-only');
+			// 但不允许编辑内容
+			node.classList.add('no-edit');
 		}
 	});
 
@@ -1085,6 +1096,7 @@ You are a helpful coding assistant. Answer concisely.
 			contentDiv.textContent = rawContent;
 			// 2. 允许编辑
 			contentDiv.contentEditable = 'plaintext-only';
+			contentDiv.classList.add('editable');
 			// 3. 更新状态标记
 			msgDiv.dataset.rendered = 'false';
 			// 4. 更新按钮文本 (现在显示的是源码，按钮提示用户点击可渲染)
@@ -1098,18 +1110,15 @@ You are a helpful coding assistant. Answer concisely.
 			// === 切换到渲染模式 (RENDER) ===
 			// 1. 获取当前编辑器里的文本 (用户可能刚刚修改过)
 			const currentRawText = contentDiv.innerText;
-			
 			// 2. 确保历史记录是最新的
 			if (currentRawText !== rawContent) {
 				updateHistoryContent(id, currentRawText);
 			}
-
 			// 3. 渲染 Markdown
 			contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentRawText), DOMPurifyConfig);
-			
 			// 4. 禁止编辑 (渲染后的 HTML 不适合直接编辑)
 			contentDiv.contentEditable = 'false';
-			
+			contentDiv.classList.remove('editable');
 			// 5. 更新状态标记
 			msgDiv.dataset.rendered = 'true';
 			// 6. 更新按钮文本
@@ -1515,11 +1524,25 @@ You are a helpful coding assistant. Answer concisely.
 		});
 	}
 
+	// 判断用户是否与网页交互过
 	for(const eventType of [ 'click', 'touchstart', 'keydown', 'mousedown', 'touchend' ]){
 		document.addEventListener(eventType, () => {
 			interacted = true;
 		}, { once: true });
 	}
+
+	// 阻止 pre 编辑
+	document.addEventListener('beforeinput', (e) => {
+		// 忽略可编辑的元素 (提高性能)
+		if (e.target.tagName === 'INPUT' ||
+			e.target.tagName === 'TEXTAREA' ||
+			e.target.classList.contains('editable')) {
+			return;
+		}
+		// 阻止编辑
+		const pre = e.target.closest('.no-edit');
+		if (pre) e.preventDefault();
+	});
 
 	// --- Initialization ---
 	if(true){
