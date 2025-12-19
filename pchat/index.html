@@ -384,11 +384,23 @@
         }
 
         .input-group {
-            max-width: 800px; margin: 0 auto;
-            display: flex; border: 1px solid var(--border-color);
+            max-width: 800px;
+			margin: 0 auto;
+            display: flex;
+			border: 1px solid var(--border-color);
+			position: sticky;
         }
+		.input-group::before {
+			content: "";
+			position: absolute;
+			top: -0.3px;
+			left: -1px;
+			bottom: -0.3px;
+			width: 2px;
+			background-color: var(--user-msg-color);
+		}
 
-        textarea {
+        #user-input {
             flex: 1; background: #000; color: var(--text-color);
             border: none; padding: 12px; font-family: var(--font-stack);
 			font-size: 0.86rem; /* 比 0.875rem 小一点, 防止移动端显示滚动条 */
