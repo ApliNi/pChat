@@ -48,10 +48,15 @@ html {
 }
 
 body {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 	background-color: var(--bg-color);
 	color: var(--text-color);
 	font-family: var(--font-stack);
-	height: 100vh;
+	/* height: 100vh; */
 	display: flex !important;
 	flex-direction: column;
 	font-size: 13px;
