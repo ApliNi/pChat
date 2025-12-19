@@ -401,6 +401,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	bottom: -0.3px;
 	width: 2px;
 	background-color: var(--user-msg-color);
+	opacity: 0.85;
 }
 
 #user-input {
@@ -535,7 +536,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 /* 列表：紧凑布局 */
 .markdown-body ul, .markdown-body ol {
-	display: table;
 	padding-left: 25px;
 	width: 100%;
 }
@@ -561,7 +561,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 /* 嵌套列表更紧凑 */
 .markdown-body ul ul, .markdown-body ul ol,
 .markdown-body ol ul, .markdown-body ol ol {
-	display: table;
 	margin-top: 4px;
 }
 
@@ -580,7 +579,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 /* 引用块：更融合背景 */
 .markdown-body blockquote {
-	display: table;
 	margin: 14px 0;
 	padding: 4px 12px;
 	width: 100%;
@@ -607,9 +605,8 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	border: 1px solid #333;
 	padding: 4px 8px; /* 减小单元格内边距 */
 }
-.markdown-body th {
-	background: #111;
-	color: #ddd;
+.markdown-body table th {
+	background-color: #1b1b1b;
 	font-weight: bold;
 }
 

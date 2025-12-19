@@ -1,4 +1,11 @@
 
+console.log(String.raw`%c
+| ~ |                   |
+|  //| |\  | _| |\ _|   |
+|    | ---------------- |
+| %cApliNi - pChat%c    [Q_Q]
+`, 'color: #008fff', 'color: #17d9ff', 'color: #008fff');
+
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.3.1/+esm';
 import hljs from 'https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/+esm';
 import Katex from 'https://cdn.jsdelivr.net/npm/katex@0.16.27/+esm';
@@ -197,9 +204,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 	await IDBManager.init();
 
 	let cfg = {
-		puter_priorityModels: ['qwen3-max', 'gemini-3-pro', 'gemini-2.5', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'],
 		lastSessionId: null,
+		lastModel: null,
 		modelService: 'Puter.js',
+		puterPriorityModels: ['qwen3-max', 'gemini-3-pro', 'gemini-2.5', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'],
+		openaiApiEndpoint: '',
+		openaiApiKey: '',
+		openaiPriorityModels: [],
 
 		...await IDBManager.getConfig(),
 		setItem: (...args) => IDBManager.setConfig(...args),
@@ -224,6 +235,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 	let currentSessionId = null;
 	let sessions = [];
 	let isAutoScroll = true;
+	let interacted = false;
 
 	// --- Utilities ---
 	const generateId = () => 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
@@ -271,6 +283,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 	// 小地图自动跟随底部
 	function scrollToMinimapBottom() {
 		minimap.scrollTop = minimap.scrollHeight;
+	}
+
+	async function vibrate(v) {
+		if(!interacted) return;
+		if ('vibrate' in navigator) navigator.vibrate(v);
 	}
 
 	// --- Storage Logic (Wrapper around IDBManager) ---
@@ -437,7 +454,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 			pressTimer = setTimeout(() => {
 				// 震动反馈
-				if (navigator.vibrate) navigator.vibrate(25);
+				vibrate(25);
 				
 				const item = titleDiv.closest('.history-item');
 				makeTitleEditable(titleDiv, item.dataset.sessionId);
@@ -504,7 +521,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		renderSidebar(true);
 
 		// 震动反馈
-		if (navigator.vibrate) navigator.vibrate(25);
+		vibrate(25);
 
 		// 欢迎会话不滚动到底部
 		if(id !== 'sess_welcome'){
@@ -648,7 +665,7 @@ You are a helpful coding assistant. Answer concisely.
 		updateTitle('New Session');
 
 		// 震动反馈
-		if (navigator.vibrate) navigator.vibrate(25);
+		vibrate(25);
 	}
 
 	async function updateSessionTitleIfNeeded(userText) {
@@ -673,17 +690,27 @@ You are a helpful coding assistant. Answer concisely.
 			models = models.filter(model => model.name);
 
 			modelSelect.innerHTML = '';
+
+			const createOption =(model) => {
+				const opt = document.createElement('option');
+				opt.value = model.id;
+				// 显示 模型ID 或 更友好的 Name
+				opt.innerText = model.name || model.id;
+				modelSelect.appendChild(opt);
+			};
 			
 			// 先添加优先模型
-			cfg.puter_priorityModels.forEach(pid => {
+			cfg.puterPriorityModels.forEach(pid => {
 				const m = models.find(x => x.id.includes(pid));
 				if(m) createOption(m);
 			});
 			
-			const separator = document.createElement('option');
-			separator.disabled = true;
-			separator.innerText = '──────────';
-			modelSelect.appendChild(separator);
+			if(modelSelect.innerHTML !== ''){
+				const separator = document.createElement('option');
+				separator.disabled = true;
+				separator.innerText = '──────────';
+				modelSelect.appendChild(separator);
+			}
 
 			models.forEach(m => {
 				createOption(m);
@@ -698,14 +725,6 @@ You are a helpful coding assistant. Answer concisely.
 		} catch (err) {
 			console.error('Failed to load models:', err);
 		}
-	}
-
-	function createOption(model) {
-		const opt = document.createElement('option');
-		opt.value = model.id;
-		// 显示 模型ID 或 更友好的 Name
-		opt.innerText = model.name || model.id;
-		modelSelect.appendChild(opt);
 	}
 
 	async function handleSend() {
@@ -860,7 +879,7 @@ You are a helpful coding assistant. Answer concisely.
 			uiElements.metaDiv.innerText = statsText;
 
 			// 震动反馈
-			if (navigator.vibrate) navigator.vibrate(50);
+			vibrate(50);
 
 			// 4. 更新内存中的历史记录
 			if (targetId) {
@@ -1323,10 +1342,14 @@ You are a helpful coding assistant. Answer concisely.
 		const importInput = document.getElementById('import-input');
 		const resetPuterData = document.getElementById('reset-puter-data');
 		const puterPriorityModelsInput = document.getElementById('puterPriorityModelsInput');
+		const openaiApiEndpointInput = document.getElementById('openaiApiEndpointInput');
+		const openaiApiKeyInput = document.getElementById('openaiApiKeyInput');
+		const openaiPriorityModelsInput = document.getElementById('openaiPriorityModelsInput');
 
 		// 配置页面数据更新和监听
 		if(true){
 
+			// modelService: '',
 			const modelServiceList = document.querySelectorAll('.config details.model-service');
 			for(const e of modelServiceList){
 				const service = e.dataset.service;
@@ -1343,12 +1366,29 @@ You are a helpful coding assistant. Answer concisely.
 					cfg.setItem('modelService', service);
 				});
 			}
-
-			puterPriorityModelsInput.value = cfg.puter_priorityModels.join(', ');
+			
+			// puterPriorityModels: [],
+			puterPriorityModelsInput.value = cfg.puterPriorityModels.join(', ');
 			puterPriorityModelsInput.addEventListener('input', () => {
 				const list = puterPriorityModelsInput.value.split(/\,|\;|，|；/).map(s => s.trim()).filter(s => s);
-				cfg.setItem('puter_priorityModels', list);
+				cfg.setItem('puterPriorityModels', list);
 			});
+
+			// openaiApiEndpoint: '',
+			openaiApiEndpointInput.value = cfg.openaiApiEndpoint;
+			openaiApiEndpointInput.addEventListener('input', (event) => cfg.setItem('openaiApiEndpoint', event.target.value));
+
+			// openaiApiKey: '',
+			openaiApiKeyInput.value = cfg.openaiApiKey;
+			openaiApiKeyInput.addEventListener('input', (event) => cfg.setItem('openaiApiKey', event.target.value));
+
+			// openaiPriorityModels: [],
+			openaiPriorityModelsInput.value = cfg.openaiPriorityModels.join(', ');
+			openaiPriorityModelsInput.addEventListener('input', () => {
+				const list = openaiPriorityModelsInput.value.split(/\,|\;|，|；/).map(s => s.trim()).filter(s => s);
+				cfg.setItem('openaiPriorityModels', list);
+			});
+
 		}
 
 		// 打开配置界面
@@ -1473,6 +1513,12 @@ You are a helpful coding assistant. Answer concisely.
 			}
 			location.reload();
 		});
+	}
+
+	for(const eventType of [ 'click', 'touchstart', 'keydown', 'mousedown', 'touchend' ]){
+		document.addEventListener(eventType, () => {
+			interacted = true;
+		}, { once: true });
 	}
 
 	// --- Initialization ---
