@@ -7,7 +7,7 @@ import { markedHighlight } from 'https://cdn.jsdelivr.net/npm/marked-highlight@2
 import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.6/+esm';
 import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
 
-window.addEventListener('DOMContentLoaded', async () => {
+(async () => {
 
 	const marked = new Marked(
 		markedHighlight({
@@ -1454,4 +1454,4 @@ window.addEventListener('DOMContentLoaded', async () => {
 			}
 		}
 	}
-});
+})();
