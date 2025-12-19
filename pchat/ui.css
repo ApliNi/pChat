@@ -577,6 +577,15 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	border: none;
 }
 
+.markdown-body hr:has(+ table),
+.markdown-body hr:has(+ pre) {
+	display: none;
+}
+.markdown-body table + hr,
+.markdown-body pre + hr {
+	display: none;
+}
+
 /* 引用块：更融合背景 */
 .markdown-body blockquote {
 	margin: 14px 0;
@@ -601,13 +610,24 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	margin: 10px 0;
 	font-size: 12px;
 }
-.markdown-body th, .markdown-body td {
-	border: 1px solid #333;
-	padding: 4px 8px; /* 减小单元格内边距 */
+.markdown-body table tr th, .markdown-body table tr td {
+	background-color: transparent;
+	transition: all 0.2s;
 }
-.markdown-body table th {
+.markdown-body table tr:hover th, .markdown-body table tr:hover td {
 	background-color: #1b1b1b;
+}
+.markdown-body table th, .markdown-body table td {
+	border: none;
+	padding: 6px 8px; /* 减小单元格内边距 */
+}
+.markdown-body table > thead > tr > th {
+	border-top: 2px solid #333;
+	border-bottom: 1px solid #333;
 	font-weight: bold;
+}
+.markdown-body table > tbody > tr:last-child > td {
+	border-bottom: 2px solid #333;
 }
 
 /* --- 代码样式优化 --- */
