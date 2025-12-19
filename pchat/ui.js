@@ -437,7 +437,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 			pressTimer = setTimeout(() => {
 				// 震动反馈
-				if (navigator.vibrate) navigator.vibrate(30);
+				if (navigator.vibrate) navigator.vibrate(25);
 				
 				const item = titleDiv.closest('.history-item');
 				makeTitleEditable(titleDiv, item.dataset.sessionId);
@@ -504,7 +504,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		renderSidebar(true);
 
 		// 震动反馈
-		if (navigator.vibrate) navigator.vibrate(30);
+		if (navigator.vibrate) navigator.vibrate(25);
 
 		// 欢迎会话不滚动到底部
 		if(id !== 'sess_welcome'){
@@ -648,7 +648,7 @@ You are a helpful coding assistant. Answer concisely.
 		updateTitle('New Session');
 
 		// 震动反馈
-		if (navigator.vibrate) navigator.vibrate(30);
+		if (navigator.vibrate) navigator.vibrate(25);
 	}
 
 	async function updateSessionTitleIfNeeded(userText) {
@@ -860,7 +860,7 @@ You are a helpful coding assistant. Answer concisely.
 			uiElements.metaDiv.innerText = statsText;
 
 			// 震动反馈
-			if (navigator.vibrate) navigator.vibrate(70);
+			if (navigator.vibrate) navigator.vibrate(50);
 
 			// 4. 更新内存中的历史记录
 			if (targetId) {
