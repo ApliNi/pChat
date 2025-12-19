@@ -175,7 +175,8 @@
             transition: all 0.2s;
         }
 
-        .sidebar-footer button:hover {
+        .sidebar-footer button:hover,
+		.sidebar-footer button.open {
             color: #fff;
             border-color: #666;
             background: rgba(255,255,255,0.05);
@@ -235,7 +236,7 @@
             background: var(--bg-color);
         }
 
-        #message-area {
+        .message-area {
             flex: 1;
             padding: 20px 20px 0px 20px;
             display: flex;
@@ -688,6 +689,24 @@
 			user-select: none;
 		}
 
+		.config {
+
+		}
+
+		.config button {
+			background: transparent;
+			border: none;
+			cursor: pointer;
+			padding: 0;
+            font-family: var(--font-stack);
+			transition: all 0.2s;
+			text-transform: uppercase;
+			color: var(--sys-msg-color);
+		}
+		.config button:hover {
+            /* color: #fff; */
+        }
+
 		@media (max-width: 970px) {
 			#minimap {
 				right: -100px;
@@ -770,21 +789,43 @@
         </div>
         <div id="history-list"></div>
 		<div class="sidebar-footer">
-            <button id="import-btn">IMPORT</button>
-            <button id="export-btn">EXPORT</button>
+            <button id="config-btn" style="flex: 0.4;">CONFIG</button>
             <button id="pip-window-btn">PIP</button>
-            <input type="file" id="import-input" accept=".json" style="display: none;">
         </div>
     </aside>
 
     <main id="right-panel">
-        <div id="message-area"></div>
+        <div id="message-area" class="message-area"></div>
         <div id="input-container">
             <div class="input-group">
                 <textarea id="user-input" placeholder=" > Start typing a prompt" autofocus></textarea>
                 <button id="send-btn">SEND</button>
             </div>
         </div>
+		
+		<!-- config -->
+		<div id="config" class="message-area config" style="display: none;">
+			<div class="message system">
+				<span class="role-label"><span>CONFIG</span></span>
+				<div class="content markdown-body">
+
+					<h2>导入 / 导出</h2>
+					<p>在这里导入导出所有会话:
+						<button id="import-btn">[IMPORT]</button>
+						<button id="export-btn">[EXPORT]</button>
+						<input type="file" id="import-input" accept=".json" style="display: none;">
+					</p>
+
+					<h2>重置 puter.js</h2>
+					<p>删除 puter.js 相关的数据 (不会删除聊天记录):
+						<button id="reset-puter-data">[RESET]</button>
+					</p>
+					<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户.</p>
+
+				</div>
+				<div class="msg-footer"></div>
+			</div>
+		</div>
     </main>
 
 	<aside id="minimap"></aside>
@@ -971,10 +1012,12 @@
     const historyList = document.getElementById('history-list');
     const newChatBtn = document.getElementById('new-chat-btn');
 	const minimap = document.getElementById('minimap');
-	const importBtn = document.getElementById('import-btn');
-    const exportBtn = document.getElementById('export-btn');
     const importInput = document.getElementById('import-input');
 	const pipWindowBtn = document.getElementById('pip-window-btn');
+	const configBtn = document.getElementById('config-btn');
+	const importBtn = document.getElementById('import-btn');
+    const exportBtn = document.getElementById('export-btn');
+	const resetPuterData = document.getElementById('reset-puter-data');
 
     // --- State Management ---
     let chatHistory = [];
@@ -1222,7 +1265,7 @@
 		if (isProcessing) return;
 		if (currentSessionId === id && messageArea.innerHTML !== '') return;
 
-		localStorage.setItem('puter_last_session_id', id);
+		localStorage.setItem('pChat.last.session.id', id);
 
 		currentSessionId = id;
 		const session = sessions.find(s => s.id === id);
@@ -1367,7 +1410,7 @@ You are a helpful coding assistant. Answer concisely.
 
         currentSessionId = newId;
 
-		localStorage.setItem('puter_last_session_id', newId);
+		localStorage.setItem('pChat.last.session.id', newId);
 
         chatHistory = [sysMsg];
         
@@ -1407,7 +1450,7 @@ You are a helpful coding assistant. Answer concisely.
 
         // [修改] 3. 恢复上次会话逻辑
         // 获取上次保存的 ID
-        let lastId = localStorage.getItem('puter_last_session_id');
+        let lastId = localStorage.getItem('pChat.last.session.id');
 
         // 检查该 ID 是否还存在于当前的会话列表中
         const lastSessionExists = sessions.some(s => s.id === lastId);
@@ -1459,7 +1502,7 @@ You are a helpful coding assistant. Answer concisely.
             });
 
             // 恢复上次选择的模型 (如果有)
-            const savedModel = localStorage.getItem('puter_last_model');
+            const savedModel = localStorage.getItem('pChat.last.model');
             if (savedModel && Array.from(modelSelect.options).some(o => o.value === savedModel)) {
                 modelSelect.value = savedModel;
             }
@@ -1479,7 +1522,7 @@ You are a helpful coding assistant. Answer concisely.
 
     // 监听模型改变，保存用户偏好
     modelSelect.addEventListener('change', () => {
-        localStorage.setItem('puter_last_model', modelSelect.value);
+        localStorage.setItem('pChat.last.model', modelSelect.value);
     });
 
     newChatBtn.addEventListener('click', () => {
@@ -2018,11 +2061,29 @@ You are a helpful coding assistant. Answer concisely.
         await switchSession(newSessionId);
     }
 
-	    // 导出功能
+	// 打开配置界面
+	configBtn.addEventListener('click', async () => {
+		configBtn.classList.toggle('open');
+		if(configBtn.classList.contains('open')){
+			for(const e of rightPanel.querySelectorAll('& > *')){
+				e.style.display = 'none';
+			}
+			minimap.style.display = 'none';
+			rightPanel.querySelector('& > .config').style.display = '';
+		}else{
+			for(const e of rightPanel.querySelectorAll('& > *')){
+				e.style.display = '';
+			}
+			minimap.style.display = '';
+			rightPanel.querySelector('& > .config').style.display = 'none';
+		}
+	});
+
+	// 导出功能
     exportBtn.addEventListener('click', async () => {
         if (isProcessing) return;
         const originalText = exportBtn.innerText;
-        exportBtn.innerText = 'WAIT...';
+        exportBtn.innerText += '...';
 
         try {
             // 1. 获取所有数据
@@ -2050,7 +2111,7 @@ You are a helpful coding assistant. Answer concisely.
 
         } catch (e) {
             console.error('Export failed:', e);
-            alert('Export failed!');
+            alert('导出失败');
         } finally {
             exportBtn.innerText = originalText;
         }
@@ -2068,7 +2129,7 @@ You are a helpful coding assistant. Answer concisely.
         if (!file) return;
 
         // 二次确认
-        if (!confirm('Importing will merge data. Existing sessions with the same ID will be overwritten. Continue?')) {
+        if (!confirm('确认: 导入将合并数据. 具有相同 ID 的会话将被覆盖')) {
             importInput.value = ''; // 清空选择
             return;
         }
@@ -2086,7 +2147,6 @@ You are a helpful coding assistant. Answer concisely.
                 // 执行导入
                 await IDBManager.importBackup(data);
                 
-                alert('Import successful! The page will reload.');
                 location.reload(); // 刷新页面以加载新数据
 
             } catch (err) {
@@ -2097,10 +2157,29 @@ You are a helpful coding assistant. Answer concisely.
         reader.readAsText(file);
     });
 
+	// 重置 data
+	resetPuterData.addEventListener('click', async () => {
+        // 二次确认
+        if (!confirm('确认: 删除 puter.js 相关的数据 (不会删除聊天记录)')) {
+            return;
+        }
+		// 删除数据库 puter_cache (不考虑锁)
+		indexedDB.deleteDatabase('puter_cache');
+		// 列出所有 data, 删除 "puter." 开头的数据
+		for (let i = 0; i < localStorage.length; i++) {
+			const key = localStorage.key(i);
+			if (key.startsWith('puter.')) {
+				await localStorage.removeItem(key);
+				i--;
+			}
+		}
+		location.reload();
+    });
+
 	// 画中画窗口
 	pipWindowBtn.addEventListener('click', async () => {
 	    if (!('documentPictureInPicture' in window)) {
-			alert('The current browser does not support the Document Picture-in-Picture API.');
+			alert('当前浏览器不支持文档画中画 API');
 			return;
 		}
 
