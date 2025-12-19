@@ -9,7 +9,6 @@
     <title>[Chat] Loading...</title>
 	<link rel="manifest" href="./manifest.json?v=1">
 	<link rel="icon" href="./favicon.ico">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
     <style>
 
 		@font-face {
@@ -587,7 +586,7 @@
         .markdown-body table {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 10px;
+            margin: 10px 0;
             font-size: 12px;
         }
         .markdown-body th, .markdown-body td {
@@ -633,7 +632,7 @@
             font-size: 12px; /* 代码稍微小一点 */
         }
 
-		.markdown-body input {
+		.markdown-body input[type="checkbox"] {
 			appearance: none;
 			border-radius: 0;
 			width: 12px;
@@ -641,13 +640,14 @@
 			margin-bottom: -1px !important;
 			border: 2px double var(--meta-color);
 		}
-		.markdown-body input:checked { border: 6px double var(--meta-color); }
+		.markdown-body input[type="checkbox"]:checked { border: 6px double var(--meta-color); }
 
 		/* 最后一个元素不添加 margin-bottom */
 		.markdown-body > *:last-child,
 		.markdown-body ul > li:last-child,
 		.markdown-body ol > li:last-child,
-		.markdown-body li > *:last-child {
+		.markdown-body li > *:last-child,
+		.markdown-body details > *:last-child {
 			margin-bottom: 0;
 		}
 		.markdown-body > *:first-child {
@@ -689,9 +689,9 @@
 			user-select: none;
 		}
 
-		.config {
+		/* .config {
 
-		}
+		} */
 
 		.config button {
 			background: transparent;
@@ -703,9 +703,57 @@
 			text-transform: uppercase;
 			color: var(--sys-msg-color);
 		}
-		.config button:hover {
-            /* color: #fff; */
-        }
+		/* .config button:hover {
+            color: #fff;
+        } */
+
+		.config details.model-service {
+			position: relative;
+		}
+
+		.config details.model-service summary::after {
+			content: '[OFF]';
+			color: var(--meta-color);
+			padding-right: 10px;
+			position: absolute;
+			right: 0;
+		}
+		.config details:open.model-service summary::after {
+			content: '[ON]';
+		}
+
+		.config p:has(input) {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.config input {
+			appearance: none;
+			-webkit-appearance: none;
+			background: #000;
+			color: var(--text-color);
+			border: 1px solid var(--border-color);
+			padding: 4px 10px;
+			font-family: var(--font-stack);
+			font-size: 12px;
+			outline: none;
+			flex: 1;
+			width: 100%;
+			min-width: 100px;
+		}
+
+		/* .config table.input-config-table {
+
+		} */
+		.config table.input-config-table tr > td:first-child {
+			width: 130px;
+		}
+		.config table.input-config-table td {
+			border: 0;
+			padding: 2px 0;
+		}
+		
 
 		@media (max-width: 970px) {
 			#minimap {
@@ -818,7 +866,16 @@
 
 					<h2>模型服务</h2>
 
-					<details class="think" open><summary>Puter.js</summary>
+					<details class="think model-service service-puter-js" open><summary>Puter.js</summary>
+
+						<h2>优先显示模型</h2>
+
+						<table class="input-config-table">
+							<tr>
+								<td>优先匹配模型列表:</td>
+								<td><input type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp" value="https://api.openai.com/v1/completions"></td>
+							</tr>
+						</table>
 
 						<h2>重置 puter.js</h2>
 						<p>删除 puter.js 相关的数据 (不会删除聊天记录):
@@ -828,7 +885,28 @@
 
 					</details>
 
-					
+					<details class="think model-service service-openai-api" open><summary>OpenAI API</summary>
+
+						<h2>API 配置</h2>
+
+						<table class="input-config-table">
+							<tr>
+								<td>API 端点:</td>
+								<td><input type="text" placeholder="https://api.openai.com/v1/completions" value="https://api.openai.com/v1/completions"></td>
+							</tr>
+							<tr>
+								<td>API 密钥:</td>
+								<td><input type="text" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></td>
+							</tr>
+							<tr>
+								<td>优先匹配模型列表:</td>
+								<td><input type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
+							</tr>
+						</table>
+
+						<p>此功能正在开发中, 暂不可用...</p>
+
+					</details>
 
 				</div>
 				<div class="msg-footer"></div>
