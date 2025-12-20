@@ -392,6 +392,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	padding: 20px 20px 40px 20px;
 	background: var(--bg-color);
 	outline: 1px solid var(--bg-color);
+	margin-top: auto;
 }
 
 .input-group {

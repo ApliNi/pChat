@@ -513,24 +513,26 @@ window.addEventListener('DOMContentLoaded', async () => {
 			chatHistory = [];
 		}
 		
-		rightPanel.scrollTop = 0;	// 防止继承上一个聊天的滚动位置
+		messageArea.style.display = 'none';
 		messageArea.innerHTML = '';
+		rightPanel.scrollTop = 0;	// 防止继承上一个聊天的滚动位置
 		minimap.innerHTML = '';
 		
 		for(const msg of chatHistory){
-			const els = await appendMessageToDOM({ ...msg, animate: false });
-			els.contentDiv.classList.remove('cursor');
+			const els = await appendMessageToDOM({ ...msg, animate: false, cursor: false });
+		}
+
+		messageArea.style.display = 'flex';
+
+		// 欢迎会话不滚动到底部
+		if(id !== 'sess_welcome'){
+			scrollToBottom(true, true);
 		}
 		
 		renderSidebar(true);
 
 		// 震动反馈
 		vibrate(25);
-
-		// 欢迎会话不滚动到底部
-		if(id !== 'sess_welcome'){
-			scrollToBottom(true, true);
-		}
 	}
 
 	async function updateTitle(_title) {
@@ -1055,9 +1057,12 @@ You are a helpful coding assistant. Answer concisely.
 		stats = null,
 		isCollapsed = false,
 		isRaw = undefined,
+		cursor = true,
+		display = '',
 	}) {
 		const msgDiv = document.createElement('div');
 		msgDiv.className = `message ${role}`;
+		msgDiv.style.display = display;
 		if(animate) msgDiv.style.animation = 'fadeIn 0.3s ease';
 		msgDiv.id = id;
 
@@ -1097,7 +1102,7 @@ You are a helpful coding assistant. Answer concisely.
 				</div>
 			</span>
 			<!-- [修改] 添加 collapsedClass -->
-			<div class="content markdown-body ${(role === 'assistant' && content === '') ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
+			<div class="content markdown-body ${(role === 'assistant' && content === '' && cursor) ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
 				<div class="meta-stats"></div>
@@ -1129,11 +1134,9 @@ You are a helpful coding assistant. Answer concisely.
 			contentArea.textContent = content;
 		}
 
-		messageArea.appendChild(msgDiv);
-
-		addMinimapItem(role, id, isCollapsed);
-
-		if(animate) scrollToBottom();
+		if (stats) {
+			msgDiv.querySelector('.meta-stats').innerText = stats;
+		}
 
 		contentArea.addEventListener('input', () => {
 			if (msgDiv.dataset.rendered === 'false') {
@@ -1142,13 +1145,16 @@ You are a helpful coding assistant. Answer concisely.
 			}
 		});
 
-		if (stats) {
-			msgDiv.querySelector('.meta-stats').innerText = stats;
-		}
+		messageArea.appendChild(msgDiv);
+
+		addMinimapItem(role, id, isCollapsed);
+
+		if(animate) scrollToBottom();
 
 		return {
 			contentDiv: contentArea,
-			metaDiv: msgDiv.querySelector('.meta-stats')
+			metaDiv: msgDiv.querySelector('.meta-stats'),
+			msgDiv: msgDiv,
 		};
 	}
 
