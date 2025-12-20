@@ -709,10 +709,7 @@ You are a helpful coding assistant. Answer concisely.
 		}finally{
 			// 不输入内容也滚动到底部
 			setTimeout(() => {
-				rightPanel.scrollTo({
-					top: rightPanel.scrollHeight,
-					behavior: 'smooth',
-				});
+				rightPanel.scrollTo({ top: rightPanel.scrollHeight, behavior: 'smooth' });
 			}, 10);
 		}
 	}
@@ -916,7 +913,7 @@ You are a helpful coding assistant. Answer concisely.
 			} else {
 				aiMsgId = generateId();
 				contextHistory = [...chatHistory];
-				uiElements = appendMessageToDOM({ role: 'assistant', content: '', id: aiMsgId, model: currentModel });
+				uiElements = await appendMessageToDOM({ role: 'assistant', content: '', id: aiMsgId, model: currentModel });
 				uiElements.contentDiv.classList.add('cursor'); // 新消息也激活光标
 			}
 
