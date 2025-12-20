@@ -940,7 +940,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 					// 处理思考消息
 					if(part.reasoning && think === 0){
 						think = 1;
-						fullText += `<details class="think __pChatSystemElement__" open><summary>[THINK]</summary>\n\n`;
+						fullText += `<details class="think __pChat__"><summary>[THINK]</summary>\n\n`;
 					}
 					if(part.reasoning){
 						fullText += part.reasoning;
@@ -982,11 +982,16 @@ window.addEventListener('DOMContentLoaded', async () => {
 						},
 					});
 
-					// 第一次思考完毕后折叠思考内容
+					if (think === 1) {
+						uiElements.contentDiv.querySelector('.think').open = true;
+					}
+
+					// 思考完毕后折叠思考内容
 					if (think === 2) {
 						think = 0;
-						fullText = fullText.replace(`<details class="think __pChatSystemElement__" open>`, `<details class="think __pChatSystemElement__">`);
-						uiElements.contentDiv.querySelector('.think').open = false;
+						setTimeout(() => {
+							uiElements.contentDiv.querySelector('.think').open = false;
+						}, 200);
 					}
 
 					// 等待浏览器刷新一帧
