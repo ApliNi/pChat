@@ -306,8 +306,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 		try {
 			sessions = await IDBManager.getAllSessions();
 			renderSidebar();
-		} catch (e) {
-			console.error('Failed to load sessions', e);
+		} catch (err) {
+			console.error('Failed to load sessions', err);
 		}
 	}
 
@@ -516,7 +516,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 		try {
 			chatHistory = await IDBManager.getSessionMessages(id);
-		} catch (e) {
+		} catch (err) {
 			chatHistory = [];
 		}
 		
@@ -876,7 +876,7 @@ You are a helpful coding assistant. Answer concisely.
 					buffer = lines.pop(); // 保持残余数据在缓冲区
 
 					for (const line of lines) {
-						const message = line.replace(/^data: /, '').trim();
+						const message = line.replace(/^data: /, '');
 						if (!message || message === '[DONE]') continue;
 
 						try {
@@ -886,9 +886,7 @@ You are a helpful coding assistant. Answer concisely.
 								text: (delta.content) || '',
 								reasoning: (delta.reasoning ?? delta.reasoning_content) || '',
 							};
-						} catch (e) {
-							console.warn("Skip parse error", e);
-						}
+						} catch (err) {}
 					}
 				}
 			}
@@ -1041,10 +1039,10 @@ You are a helpful coding assistant. Answer concisely.
 				// 5. 最后再一次性保存到 IndexedDB (避免频繁 IO)
 				await saveCurrentSession();
 
-			} catch (error) {
+			} catch (err) {
 				clearInterval(timerInterval);
-				console.error(error);
-				uiElements.contentDiv.textContent += `\n\n[SYSTEM ERROR]: ${error.message}`;
+				console.error(err);
+				uiElements.contentDiv.textContent += `\n\n[SYSTEM ERROR]: ${err.message}`;
 				uiElements.metaDiv.innerText = `FAIL`;
 				uiElements.metaDiv.style.color = '#ff3333';
 			} finally {
@@ -1652,8 +1650,8 @@ You are a helpful coding assistant. Answer concisely.
 				document.body.removeChild(a);
 				URL.revokeObjectURL(url);
 
-			} catch (e) {
-				console.error('Export failed:', e);
+			} catch (err) {
+				console.error('Export failed:', err);
 				alert('导出失败');
 			} finally {
 				exportBtn.innerText = originalText;
