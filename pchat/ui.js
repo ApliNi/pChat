@@ -228,6 +228,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 	let cfg = {
 		lastSessionId: null,
 		lastModel: null,
+		defaultSystemPrompt: '',
 		modelService: 'Puter.js',
 		puterPriorityModels: ['qwen3-max', 'gemini-3-pro', 'gemini-2.5', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'],
 		openaiApiEndpoint: '',
@@ -640,13 +641,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			role: 'system',
 			isRaw: false,
 			isCollapsed: true,
-			content: `
-## Format
-- All block tokens should have a blank line before and after them.
-- Use \`\\n\\n$$ ... $$\\n\\n\` to display a block-level LaTeX formula.
----
-You are a helpful coding assistant. Answer concisely.
-	`.trim(),
+			content: cfg.defaultSystemPrompt,
 			id: generateId(),
 		};
 		
@@ -1475,16 +1470,25 @@ You are a helpful coding assistant. Answer concisely.
 
 		// 加载配置页面内容
 		document.querySelector('#config .content').innerHTML = `
-<h2>导入 / 导出</h2>
+<h2>数据</h2>
 <p>在这里导入导出数据和配置:
 	<button id="import-btn">[IMPORT]</button>
 	<button id="export-btn">[EXPORT]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
-<p>注意: 导出文件包含模型配置和密钥等敏感信息.</p>
+<p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
 
-<h2>模型服务</h2>
-<p>关闭配置页面后自动刷新模型列表.</p>
+<h2>会话</h2>
+
+<p>默认系统提示词, 清空后跟随软件自动更新</p>
+<pre id="defaultSystemPromptInput" contenteditable="plaintext-only">## Format
+- All block tokens should have a blank line before and after them.
+- Use \`\\n\\n$$ ... $$\\n\\n\` to display a block-level LaTeX formula.
+---
+You are a helpful coding assistant. Answer concisely.</pre>
+
+<h2>模型</h2>
+<p>关闭配置页面后自动刷新模型列表</p>
 
 <details class="think model-service" data-service="Puter.js" open><summary>Puter.js</summary>
 	<h2>优先显示模型</h2>
@@ -1495,8 +1499,8 @@ You are a helpful coding assistant. Answer concisely.
 	</table>
 	<h2>登录状态</h2>
 	<p>清除 puter.js 登录状态 (不会删除聊天记录): <button id="reset-puter-data">[LOGOUT]</button></p>
-	<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户.</p>
-	<p>禁用此服务后刷新页面以取消 puter.js 资源加载.</p>
+	<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户</p>
+	<p>禁用此服务后刷新页面以取消 puter.js 资源加载</p>
 </details>
 
 <details class="think model-service" data-service="OpenAI-API"><summary>OpenAI API</summary>
@@ -1516,7 +1520,7 @@ You are a helpful coding assistant. Answer concisely.
 		推荐使用 <a href="https://github.com/xixu-me/Xget?tab=readme-ov-file#ai-inference-providers" target="_blank">Xget</a> 代理,
 		通过我们的部署, 例如: <code>https://xget.ipacel.cc/ip/openrouter/api/v1</code>
 	</p>
-	<p>支持添加多个 API 密钥, 轮询调用.</p>
+	<p>支持添加多个 API 密钥, 轮询调用</p>
 </details>
 `;
 
@@ -1524,6 +1528,7 @@ You are a helpful coding assistant. Answer concisely.
 		const importBtn = document.getElementById('import-btn');
 		const exportBtn = document.getElementById('export-btn');
 		const importInput = document.getElementById('import-input');
+		const defaultSystemPromptInput = document.getElementById('defaultSystemPromptInput');
 		const resetPuterData = document.getElementById('reset-puter-data');
 		const puterPriorityModelsInput = document.getElementById('puterPriorityModelsInput');
 		const openaiApiEndpointInput = document.getElementById('openaiApiEndpointInput');
@@ -1534,6 +1539,19 @@ You are a helpful coding assistant. Answer concisely.
 		let openaiApiModify = false;
 
 		// --- 配置页面数据更新和监听 ---
+
+		// defaultSystemPrompt: '',
+		const localDefaultSystemPrompt = defaultSystemPromptInput.textContent;
+		if(cfg.defaultSystemPrompt){
+			defaultSystemPromptInput.textContent = cfg.defaultSystemPrompt;
+		}else{
+			cfg.defaultSystemPrompt = localDefaultSystemPrompt;
+		}
+		defaultSystemPromptInput.addEventListener('input', () => {
+			const str = defaultSystemPromptInput.textContent.replace(/^\s*\n+|\s+$/g, '');
+			cfg.setItem('defaultSystemPrompt', str);
+			if(!str) cfg.defaultSystemPrompt = localDefaultSystemPrompt;
+		});
 
 		// modelService: '',
 		const modelServiceList = document.querySelectorAll('.config details.model-service');
@@ -1594,6 +1612,10 @@ You are a helpful coding assistant. Answer concisely.
 		configBtn.addEventListener('click', async () => {
 			configBtn.classList.toggle('open');
 			if(configBtn.classList.contains('open')){
+
+				// 重新填充默认提示词
+				defaultSystemPromptInput.textContent = cfg.defaultSystemPrompt;
+
 				for(const e of rightPanel.querySelectorAll('& > *')){
 					e.style.display = 'none';
 				}
