@@ -576,6 +576,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 ## 特性
 - 免费: 无需注册, 无需登录, 无需支付. 支持通过 Puter.js 和 OpenAI-API 提供模型服务.
 - 本地存储: 所有聊天记录通过 IndexedDB 存储在浏览器本地, 除 AI 推理外, 不上传到任何服务器.
+- 离线运行: 通过 Service Worker 缓存资源, 使其能够脱机运行, 联机后自动更新资源.
 
 ## 界面
 - 模型切换: 点击右上角下拉菜单切换模型. 记忆上次使用的模型.
