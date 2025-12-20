@@ -1469,11 +1469,12 @@ You are a helpful coding assistant. Answer concisely.
 		// 加载配置页面内容
 		document.querySelector('#config .content').innerHTML = `
 <h2>导入 / 导出</h2>
-<p>在这里导入导出所有会话:
+<p>在这里导入导出数据和配置:
 	<button id="import-btn">[IMPORT]</button>
 	<button id="export-btn">[EXPORT]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
+<p>注意: 导出文件包含模型配置和密钥等敏感信息.</p>
 
 <h2>模型服务</h2>
 <p>关闭配置页面后自动刷新模型列表.</p>
@@ -1595,7 +1596,7 @@ You are a helpful coding assistant. Answer concisely.
 		// 导出功能
 		exportBtn.addEventListener('click', async () => {
 			// 二次确认
-			if (!confirm('确认: 将导出所有聊天记录为一个 JSON 文件')) {
+			if (!confirm('确认: 导出数据')) {
 				return;
 			}
 
@@ -1645,7 +1646,7 @@ You are a helpful coding assistant. Answer concisely.
 			if (!file) return;
 
 			// 二次确认
-			if (!confirm('确认: 导入将合并数据. 具有相同 ID 的会话将被覆盖')) {
+			if (!confirm('确认: 导入并合并数据, ID 冲突的数据将被覆盖')) {
 				importInput.value = ''; // 清空选择
 				return;
 			}
@@ -1676,7 +1677,7 @@ You are a helpful coding assistant. Answer concisely.
 		// 重置 puter.js 登录
 		resetPuterData.addEventListener('click', async () => {
 			// 二次确认
-			if (!confirm('确认: 清除 puter.js 登录状态 (不会删除聊天记录)')) {
+			if (!confirm('确认: 清除 puter.js 登录状态')) {
 				return;
 			}
 			if(window.puter) await window.puter.auth.logout();
