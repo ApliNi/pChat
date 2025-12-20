@@ -565,12 +565,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 				isCollapsed: false,
 				isRaw: false,
 				content: `
-# [ Puter.js AI Chat Terminal ]
+# [ pChat - AI Chat Terminal ]
 
-这是一个基于 Puter.js 的本地化 AI 聊天终端.
+这是一个轻量级本地化 AI 聊天终端, 在浏览器上可用: https://pchat.ipacel.cc/
 
 ## 特性
-- 免费: 无需注册, 无需登录, 无需支付, 通过 Puter.js 提供完全免费的服务.
+- 免费: 无需注册, 无需登录, 无需支付. 支持通过 Puter.js 和 OpenAI-API 提供模型服务.
 - 本地存储: 所有聊天记录通过 IndexedDB 存储在浏览器本地, 除 AI 推理外, 不上传到任何服务器.
 
 ## 界面
@@ -601,6 +601,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 - 导入导出: 支持将聊天导出到 JSON 文件, 导入时与当前会话合并, 覆盖 ID 相同的会话.
 - 模型服务:
 	- "Puter.js": 支持清除 puter.js 身份验证信息和缓存.
+	- "OpenAI-API": 支持配置标准 API 服务.
 
 ## 前端库
 - [Puter.js](https://github.com/heyPuter/puter) - 提供 AI 服务
