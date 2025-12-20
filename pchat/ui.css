@@ -758,6 +758,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 .config details:open.model-service summary::after {
 	content: '[ON]';
+	color: var(--user-msg-color);
 }
 
 .config p:has(input) {
@@ -781,15 +782,20 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	min-width: 100px;
 }
 
-/* .config table.input-config-table {
-
-} */
 .config table.input-config-table tr > td:first-child {
 	width: 130px;
 }
-.config table.input-config-table td {
-	border: 0;
+.config table.input-config-table td,
+.config table.input-config-table th {
+	border: 0 !important;
 	padding: 2px 0;
+}
+
+.config #openaiApiKeyInput {
+	-webkit-text-security: disc;
+}
+.config #openaiApiKeyInput:focus {
+	-webkit-text-security: none;
 }
 
 

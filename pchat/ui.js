@@ -688,56 +688,6 @@ You are a helpful coding assistant. Answer concisely.
 		}
 	}
 
-	// --- 获取并渲染模型列表 ---
-	async function loadModels() {
-		try {
-			// 1. 获取模型列表
-			let models = await puter.ai.listModels();
-			
-			// 2. 按提供商或名称简单排序 (可选)
-			models.sort((a, b) => a.id.localeCompare(b.id));
-
-			// 过滤无效的模型
-			models = models.filter(model => model.name);
-
-			modelSelect.innerHTML = '';
-
-			const createOption =(model) => {
-				const opt = document.createElement('option');
-				opt.value = model.id;
-				// 显示 模型ID 或 更友好的 Name
-				opt.innerText = model.name || model.id;
-				modelSelect.appendChild(opt);
-			};
-			
-			// 先添加优先模型
-			cfg.puterPriorityModels.forEach(pid => {
-				const m = models.find(x => x.id.includes(pid));
-				if(m) createOption(m);
-			});
-			
-			if(modelSelect.innerHTML !== ''){
-				const separator = document.createElement('option');
-				separator.disabled = true;
-				separator.innerText = '──────────';
-				modelSelect.appendChild(separator);
-			}
-
-			models.forEach(m => {
-				createOption(m);
-			});
-
-			// 恢复上次选择的模型 (如果有)
-			const savedModel = cfg.lastModel;
-			if (savedModel && Array.from(modelSelect.options).some(o => o.value === savedModel)) {
-				modelSelect.value = savedModel;
-			}
-
-		} catch (err) {
-			console.error('Failed to load models:', err);
-		}
-	}
-
 	async function handleSend() {
 		try{
 			// 删除字符串开头的换行和末尾的空白字符 (防止删除缩进)
@@ -756,7 +706,7 @@ You are a helpful coding assistant. Answer concisely.
 
 			await saveCurrentSession();
 			// 不等待 AI 回复
-			performAIRequest();
+			AIService.performAIRequest();
 
 		}catch(err){
 			console.error(err);
@@ -772,161 +722,323 @@ You are a helpful coding assistant. Answer concisely.
 		}
 	}
 
-	async function performAIRequest(targetId = null) {
-		if (isProcessing) return;
-		
-		const currentModel = modelSelect.value;
-		toggleState(true);
+	// --- AI Service Provider ---
+	const AIService = {
 
-		let aiMsgId, contextHistory, uiElements;
+		// 动态加载 puter.js
+		async loadPuter() {
+			if (!window.puter) {
+				// 添加 script 标签并等待加载完毕
+				const script = document.createElement('script');
+				script.src = 'https://js.puter.com/v2/';
+				document.body.appendChild(script);
+				await new Promise(resolve => script.onload = resolve);
+			}
+		},
 
-		if (targetId) {
-			aiMsgId = targetId;
-			const targetIndex = chatHistory.findIndex(m => m.id === targetId);
-			if (targetIndex === -1) { toggleState(false); return; }
-			contextHistory = chatHistory.slice(0, targetIndex);
-			
-			const msgDiv = document.getElementById(targetId);
-			const contentDiv = msgDiv.querySelector('.content');
-			const metaDiv = msgDiv.querySelector('.meta-stats');
-			msgDiv.dataset.rendered = 'true';
-			msgDiv.querySelector('.btn-toggle').innerText = '[RAW]';
-			contentDiv.contentEditable = 'false'; // 生成时禁止编辑
-
-			msgDiv.querySelector('.role-label span:first-child').innerText = currentModel.toUpperCase();
-			
-			contentDiv.textContent = '';
-			contentDiv.classList.add('cursor'); // 激活光标
-			uiElements = { contentDiv, metaDiv };
-		} else {
-			aiMsgId = generateId();
-			contextHistory = [...chatHistory];
-			uiElements = appendMessageToDOM({ role: 'assistant', content: '', id: aiMsgId, model: currentModel });
-			uiElements.contentDiv.classList.add('cursor'); // 新消息也激活光标
-		}
-
-		uiElements.metaDiv.style.color = '';
-		
-		const startTime = Date.now();
-		const timerInterval = setInterval(() => {
-			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-			uiElements.metaDiv.innerText = `GENERATING: ${elapsed}s`;
-		}, 100);
-
-		try {
-			const apiHistory = contextHistory.map(({role, content}) => ({role, content}));
-			
-			const response = await puter.ai.chat(apiHistory, {
-				model: currentModel,
-				stream: true,
-			});
-
-			// 2. 循环处理流数据
-			let isRendering = 0;
-			let think = false;
-			let fullText = '';
-			for await (const part of response) {
-
-				// 处理不同输出
-				if(part.type === 'reasoning'){
-					// 添加思考折叠框
-					if(think === false) fullText += `<details class="think"><summary>[THINK]</summary>\n\n`;
-					think = true;
-					fullText += (part?.reasoning || '');
-				}
-				if(part.type === 'text'){
-					// 结束思考折叠框
-					if(think === true) fullText += `\n\n</details>\n\n`;
-					think = false;
-					fullText += (part?.text || '');
-				}
-
-				// 延迟渲染, 防止卡顿
-				if(isRendering > 1) continue;
-				while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 100));
-				isRendering += 1;
-
-				// 渲染新内容
-				const newHtmlContent = DOMPurify.sanitize(marked.parse(fullText), DOMPurifyConfig);
-				morphdom(uiElements.contentDiv, `<div>${newHtmlContent}</div>`, {
-					childrenOnly: true,
-					onBeforeElUpdated: (from, to) => {
-						// 如果节点内容完全一致, 直接跳过更新
-						if (from.isEqualNode(to)) {
-							return false;
-						}
-
-						// 保持 details 的打开状态
-						if (from.tagName === 'DETAILS') {
-							to.open = from.open;
-						}
-
-						// 保持 pre 的滚动条状态
-						if (from.tagName === 'PRE') {
-							to.scrollLeft = from.scrollLeft;
-							to.scrollTop = from.scrollTop;
-						}
-
-						return true;
-					},
-				});
-
-				// 等待浏览器刷新一帧
-				requestAnimationFrame(() => {
-					isRendering -= 1;
-				});
+		// 获取模型列表
+		async loadModels() {
+			try {
 				
-				scrollToBottom();
-			}
+				modelSelect.innerHTML = `
+					<option class="loading" value="">/// Loading ///</option>
+				`;
 
-			// 3. 传输结束后的统计
-			clearInterval(timerInterval);
-			const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-			const estimatedTokens = Math.max(1, Math.round(fullText.length / 2.5)); // 估算 Token
-			const tps = (estimatedTokens / duration).toFixed(1);
-			
-			// [修改] 定义统计文本变量
-			const statsText = `Time: ${duration}s | ${tps} Token/s`;
-			uiElements.metaDiv.innerText = statsText;
+				let models;
 
-			// 震动反馈
-			vibrate(50);
+				if (cfg.modelService === 'Puter.js') {
 
-			// 4. 更新内存中的历史记录
-			if (targetId) {
-				const targetIndex = chatHistory.findIndex(m => m.id === targetId);
-				if (targetIndex !== -1) {
-					chatHistory[targetIndex].content = fullText;
-					chatHistory[targetIndex].model = currentModel;
-					// [新增] 保存统计信息
-					chatHistory[targetIndex].stats = statsText;
+					if (!window.puter) await AIService.loadPuter();
+
+					models = await window.puter.ai.listModels();
+					models.map(m => ({ id: m.id, name: m.name || m.id }));
 				}
-			} else {
-				chatHistory.push({
-					role: 'assistant',
-					content: fullText,
-					id: aiMsgId,
-					model: currentModel,
-					stats: statsText,
+				else if (cfg.modelService === 'OpenAI-API') {
+
+					// 注销 puter.js
+					if (window.puter) {
+						
+					}
+
+					// OpenAI 模式
+					if (!cfg.openaiApiEndpoint) models = [];
+					const resp = await fetch(`${cfg.openaiApiEndpoint.replace(/\/+$/, '')}/models`, {
+						headers: { 'Authorization': `Bearer ${cfg.openaiApiKey}` }
+					});
+					const data = await resp.json();
+					models = data.data.map(m => ({ id: m.id, name: m.id }));
+				}
+				
+				// 过滤并排序
+				models = models.filter(model => model.id);
+
+				const priorityList = cfg.modelService === 'Puter.js' ? cfg.puterPriorityModels : cfg.openaiPriorityModels;
+
+				let createOptionCount = 0;
+				const createOption = (m) => {
+					createOptionCount ++;
+					const opt = document.createElement('option');
+					opt.value = m.id;
+					opt.innerText = m.name;
+					modelSelect.appendChild(opt);
+				};
+
+				// 优先模型
+				priorityList.forEach(pid => {
+					const m = models.find(x => x.id.includes(pid));
+					if (m) createOption(m);
 				});
+
+				if (createOptionCount !== 0) {
+					const sep = document.createElement('option');
+					sep.disabled = true;
+					sep.innerText = '──────────';
+					modelSelect.appendChild(sep);
+				}
+
+				// 其他模型
+				models.forEach(m => {
+					if (!priorityList.some(pid => m.id.includes(pid))) {
+						createOption(m);
+					}
+				});
+
+				// 恢复上次选择
+				if (cfg.lastModel && Array.from(modelSelect.options).some(o => o.value === cfg.lastModel)) {
+					modelSelect.value = cfg.lastModel;
+				}
+
+				modelSelect.querySelector('.loading').remove();
+			} catch (err) {
+				console.error('Failed to load models:', err);
+			}
+		},
+
+		// 统一的流式输出 Generator
+		async *chat(messages, model) {
+			if (cfg.modelService === 'Puter.js') {
+
+				if (!window.puter) await AIService.loadPuter();
+
+				const response = await window.puter.ai.chat(messages, { model, stream: true });
+				for await (const part of response) {
+					yield {
+						text: part.text || '',
+						reasoning: part.reasoning || '',
+						done: false
+					};
+				}
+			}
+			else if (cfg.modelService === 'OpenAI-API') {
+				// OpenAI 模式
+				const response = await fetch(`${cfg.openaiApiEndpoint.replace(/\/+$/, '')}/chat/completions`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${cfg.openaiApiKey}`
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: messages,
+						stream: true,
+					})
+				});
+
+				if (!response.ok) {
+					const err = await response.json();
+					throw new Error(err.error?.message || 'OpenAI API Request Failed');
+				}
+
+				const reader = response.body.getReader();
+				const decoder = new TextDecoder();
+				let buffer = '';
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					buffer += decoder.decode(value, { stream: true });
+					const lines = buffer.split('\n');
+					buffer = lines.pop(); // 保持残余数据在缓冲区
+
+					for (const line of lines) {
+						const message = line.replace(/^data: /, '').trim();
+						if (!message || message === '[DONE]') continue;
+
+						try {
+							const parsed = JSON.parse(message);
+							const delta = parsed.choices[0].delta;
+							yield {
+								text: delta.content || '',
+								// 兼容 DeepSeek 等模型的思考过程 (reasoning_content)
+								reasoning: delta.reasoning_content || '',
+								done: false
+							};
+						} catch (e) {
+							console.warn("Skip parse error", e);
+						}
+					}
+				}
+			}
+		},
+
+		// 渲染消息
+		async performAIRequest(targetId = null) {
+			if (isProcessing) return;
+			
+			const currentModel = modelSelect.value;
+			toggleState(true);
+
+			let aiMsgId, contextHistory, uiElements;
+
+			if (targetId) {
+				aiMsgId = targetId;
+				const targetIndex = chatHistory.findIndex(m => m.id === targetId);
+				if (targetIndex === -1) { toggleState(false); return; }
+				contextHistory = chatHistory.slice(0, targetIndex);
+				
+				const msgDiv = document.getElementById(targetId);
+				const contentDiv = msgDiv.querySelector('.content');
+				const metaDiv = msgDiv.querySelector('.meta-stats');
+				msgDiv.dataset.rendered = 'true';
+				msgDiv.querySelector('.btn-toggle').innerText = '[RAW]';
+				contentDiv.contentEditable = 'false'; // 生成时禁止编辑
+
+				msgDiv.querySelector('.role-label span:first-child').innerText = currentModel.toUpperCase();
+				
+				contentDiv.textContent = '';
+				contentDiv.classList.add('cursor'); // 激活光标
+				uiElements = { contentDiv, metaDiv };
+			} else {
+				aiMsgId = generateId();
+				contextHistory = [...chatHistory];
+				uiElements = appendMessageToDOM({ role: 'assistant', content: '', id: aiMsgId, model: currentModel });
+				uiElements.contentDiv.classList.add('cursor'); // 新消息也激活光标
 			}
 
-			// 5. 最后再一次性保存到 IndexedDB (避免频繁 IO)
-			await saveCurrentSession();
+			uiElements.metaDiv.style.color = '';
+			
+			const startTime = Date.now();
+			const timerInterval = setInterval(() => {
+				const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+				uiElements.metaDiv.innerText = `GENERATING: ${elapsed}s`;
+			}, 100);
 
-		} catch (error) {
-			clearInterval(timerInterval);
-			console.error(error);
-			uiElements.contentDiv.textContent += `\n\n[SYSTEM ERROR]: ${error.message}`;
-			uiElements.metaDiv.innerText = `FAIL`;
-			uiElements.metaDiv.style.color = '#ff3333';
-		} finally {
-			// 移除光标样式，恢复按钮状态
-			uiElements.contentDiv.classList.remove('cursor');
-			toggleState(false);
-			if (!targetId) scrollToBottom();
-		}
-	}
+			try {
+				const apiHistory = contextHistory.map(({role, content}) => ({role, content}));
+
+				const responseStream = AIService.chat(apiHistory, currentModel);
+
+				// 2. 循环处理流数据
+				let isRendering = 0;
+				let think = false;
+				let fullText = '';
+				for await (const part of responseStream) {
+					// 处理思考逻辑 (Puter 使用 reasoning 字段, OpenAI 部分模型也支持)
+					if (part.reasoning && !think) {
+						fullText += `<details class="think" open><summary>[THINK]</summary>\n\n`;
+						think = true;
+					}
+					
+					if (part.reasoning) {
+						fullText += part.reasoning;
+					}
+
+					if (part.text) {
+						if (think) {
+							fullText += `\n\n</details>\n\n`;
+							think = false;
+						}
+						fullText += part.text;
+					}
+
+					// 延迟渲染, 防止卡顿
+					if(isRendering > 1) continue;
+					while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 100));
+					isRendering += 1;
+
+					// 渲染新内容
+					const newHtmlContent = DOMPurify.sanitize(marked.parse(fullText), DOMPurifyConfig);
+					morphdom(uiElements.contentDiv, `<div>${newHtmlContent}</div>`, {
+						childrenOnly: true,
+						onBeforeElUpdated: (from, to) => {
+							// 如果节点内容完全一致, 直接跳过更新
+							if (from.isEqualNode(to)) {
+								return false;
+							}
+
+							// 保持 details 的打开状态
+							if (from.tagName === 'DETAILS') {
+								to.open = from.open;
+							}
+
+							// 保持 pre 的滚动条状态
+							if (from.tagName === 'PRE') {
+								to.scrollLeft = from.scrollLeft;
+								to.scrollTop = from.scrollTop;
+							}
+
+							return true;
+						},
+					});
+
+					// 等待浏览器刷新一帧
+					requestAnimationFrame(() => {
+						isRendering -= 1;
+					});
+					
+					scrollToBottom();
+				}
+
+				// 3. 传输结束后的统计
+				clearInterval(timerInterval);
+				const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+				const estimatedTokens = Math.max(1, Math.round(fullText.length / 2.5)); // 估算 Token
+				const tps = (estimatedTokens / duration).toFixed(1);
+				
+				// [修改] 定义统计文本变量
+				const statsText = `Time: ${duration}s | ${tps} Token/s`;
+				uiElements.metaDiv.innerText = statsText;
+
+				// 震动反馈
+				vibrate(50);
+
+				// 4. 更新内存中的历史记录
+				if (targetId) {
+					const targetIndex = chatHistory.findIndex(m => m.id === targetId);
+					if (targetIndex !== -1) {
+						chatHistory[targetIndex].content = fullText;
+						chatHistory[targetIndex].model = currentModel;
+						// [新增] 保存统计信息
+						chatHistory[targetIndex].stats = statsText;
+					}
+				} else {
+					chatHistory.push({
+						role: 'assistant',
+						content: fullText,
+						id: aiMsgId,
+						model: currentModel,
+						stats: statsText,
+					});
+				}
+
+				// 5. 最后再一次性保存到 IndexedDB (避免频繁 IO)
+				await saveCurrentSession();
+
+			} catch (error) {
+				clearInterval(timerInterval);
+				console.error(error);
+				uiElements.contentDiv.textContent += `\n\n[SYSTEM ERROR]: ${error.message}`;
+				uiElements.metaDiv.innerText = `FAIL`;
+				uiElements.metaDiv.style.color = '#ff3333';
+			} finally {
+				// 移除光标样式，恢复按钮状态
+				uiElements.contentDiv.classList.remove('cursor');
+				toggleState(false);
+				if (!targetId) scrollToBottom();
+			}
+		},
+	};
 
 	function appendMessageToDOM({
 		role,
@@ -1069,7 +1181,7 @@ You are a helpful coding assistant. Answer concisely.
 
 	window.regenerateMessage = function(id) {
 		if (isProcessing) return;
-		performAIRequest(id);
+		AIService.performAIRequest(id);
 	}
 
 	window.toggleMessageView = async function(id) {
@@ -1177,7 +1289,7 @@ You are a helpful coding assistant. Answer concisely.
 
 		// 情况 1: 下一条消息存在且是 AI 回复 -> 直接重新生成该条
 		if (nextMsg && nextMsg.role === 'assistant') {
-			await performAIRequest(nextMsg.id);
+			await AIService.performAIRequest(nextMsg.id);
 		}
 		// 情况 2: 下一条消息不存在，或者下一条是用户消息 (中间插入) -> 新建 AI 消息
 		else {
@@ -1210,7 +1322,7 @@ You are a helpful coding assistant. Answer concisely.
 
 			// 4. 保存状态并开始生成
 			await saveCurrentSession();
-			await performAIRequest(newAiId);
+			await AIService.performAIRequest(newAiId);
 		}
 	}
 
@@ -1419,13 +1531,16 @@ You are a helpful coding assistant. Answer concisely.
 				newChatBtn.style.pointerEvents = '';
 				historyList.style.pointerEvents = '';
 				rightPanel.querySelector('& > .config').style.display = 'none';
+
+				// 重新加载模型列表
+				AIService.loadModels();
 			}
 			sidebarToggle.checked = false;
 		});
 
 		// 导出功能
 		exportBtn.addEventListener('click', async () => {
-				// 二次确认
+			// 二次确认
 			if (!confirm('确认: 将导出所有聊天记录为一个 JSON 文件')) {
 				return;
 			}
@@ -1504,14 +1619,13 @@ You are a helpful coding assistant. Answer concisely.
 			reader.readAsText(file);
 		});
 
-		// 重置 data
+		// 重置 puter.js 登录
 		resetPuterData.addEventListener('click', async () => {
 			// 二次确认
-			if (!confirm('确认: 删除 puter.js 相关的数据 (不会删除聊天记录)')) {
+			if (!confirm('确认: 清除 puter.js 登录状态 (不会删除聊天记录)')) {
 				return;
 			}
-			// 删除数据库 puter_cache (不考虑锁)
-			indexedDB.deleteDatabase('puter_cache');
+			if(window.puter) await window.puter.auth.logout();
 			// 列出所有 data, 删除 "puter." 开头的数据
 			for (let i = 0; i < localStorage.length; i++) {
 				const key = localStorage.key(i);
@@ -1520,7 +1634,9 @@ You are a helpful coding assistant. Answer concisely.
 					i--;
 				}
 			}
-			location.reload();
+			// 删除数据库 puter_cache (不考虑锁)
+			indexedDB.deleteDatabase('puter_cache');
+			setTimeout(location.reload, 100);
 		});
 	}
 
@@ -1554,7 +1670,7 @@ You are a helpful coding assistant. Answer concisely.
 		document.querySelector('head').appendChild(fontLink);
 
 		// 异步加载模型
-		loadModels();
+		AIService.loadModels();
 
 		// [修改] 1. 每次启动时，强制重置欢迎会话的内容到数据库
 		await createIntroSession();

@@ -61,47 +61,34 @@
 							</p>
 
 							<h2>模型服务</h2>
+							<p>关闭配置页面后自动刷新模型列表.</p>
 
 							<details class="think model-service" data-service="Puter.js" open><summary>Puter.js</summary>
-
 								<h2>优先显示模型</h2>
-
 								<table class="input-config-table">
-									<tr>
-										<td>优先匹配模型列表:</td>
-										<td><input id="puterPriorityModelsInput" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp" value=""></td>
+									<tr><td>优先匹配模型列表:</td>
+										<td><input id="puterPriorityModelsInput" name="puterPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp" value=""></td>
 									</tr>
 								</table>
-
-								<h2>重置 puter.js</h2>
-								<p>删除 puter.js 相关的数据 (不会删除聊天记录):
-									<button id="reset-puter-data">[RESET]</button>
-								</p>
+								<h2>登录状态</h2>
+								<p>清除 puter.js 登录状态 (不会删除聊天记录): <button id="reset-puter-data">[LOGOUT]</button></p>
 								<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户.</p>
-
+								<p>禁用此服务后刷新页面以取消 puter.js 资源加载.</p>
 							</details>
 
 							<details class="think model-service" data-service="OpenAI-API"><summary>OpenAI API</summary>
-
 								<h2>API 配置</h2>
-
 								<table class="input-config-table">
-									<tr>
-										<td>API 端点:</td>
-										<td><input id="openaiApiEndpointInput" type="text" placeholder="https://api.openai.com/v1/completions"></td>
+									<tr><td>API 端点:</td>
+										<td><input id="openaiApiEndpointInput" name="openaiApiEndpoint" type="url" placeholder="https://api.openai.com/v1"></td>
 									</tr>
-									<tr>
-										<td>API 密钥:</td>
-										<td><input id="openaiApiKeyInput" type="text" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></td>
+									<tr><td>API 密钥:</td>
+										<td><input id="openaiApiKeyInput" name="openaiApiKey" type="text" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxx"></td>
 									</tr>
-									<tr>
-										<td>优先匹配模型列表:</td>
-										<td><input id="openaiPriorityModelsInput" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
+									<tr><td>优先匹配模型列表:</td>
+										<td><input id="openaiPriorityModelsInput" name="openaiPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
 									</tr>
 								</table>
-
-								<p>此功能正在开发中, 暂不可用...</p>
-
 							</details>
 
 						</div>
@@ -113,7 +100,6 @@
 			<aside id="minimap"></aside>
 		</div>
 
-		<script src="https://js.puter.com/v2/"></script>
 		<script type="module" src="./ui.js?v=1.0.0"></script>
 		<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "2d8253ba1aa34bf29e0a76988fb62ed1"}'></script>
 	</body>
