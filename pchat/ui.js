@@ -800,10 +800,11 @@ You are a helpful coding assistant. Answer concisely.
 
 				// 优先显示模型
 				const priorityList = cfg.modelService === 'Puter.js' ? cfg.puterPriorityModels : cfg.openaiPriorityModels;
-				priorityList.forEach(pid => {
-					const m = models.find(x => x.id.includes(pid));
-					if (m) createOption(m);
-				});
+				for(const model of models){
+					if (priorityList.some(pid => model.id.includes(pid))) {
+						createOption(m);
+					}
+				}
 
 				if (createOptionCount !== 0) {
 					const sep = document.createElement('option');
@@ -813,11 +814,9 @@ You are a helpful coding assistant. Answer concisely.
 				}
 
 				// 其他模型
-				models.forEach(m => {
-					if (!priorityList.some(pid => m.id.includes(pid))) {
-						createOption(m);
-					}
-				});
+				for(const model of models){
+					createOption(model);
+				}
 
 				// 恢复上次选择
 				if (cfg.lastModel && Array.from(modelSelect.options).some(o => o.value === cfg.lastModel)) {
