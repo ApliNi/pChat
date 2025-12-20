@@ -51,47 +51,7 @@
 				<div id="config" class="message-area config" style="display: none;">
 					<div class="message system">
 						<span class="role-label"><span>CONFIG</span></span>
-						<div class="content markdown-body">
-
-							<h2>导入 / 导出</h2>
-							<p>在这里导入导出所有会话:
-								<button id="import-btn">[IMPORT]</button>
-								<button id="export-btn">[EXPORT]</button>
-								<input type="file" id="import-input" accept=".json" style="display: none;">
-							</p>
-
-							<h2>模型服务</h2>
-							<p>关闭配置页面后自动刷新模型列表.</p>
-
-							<details class="think model-service" data-service="Puter.js" open><summary>Puter.js</summary>
-								<h2>优先显示模型</h2>
-								<table class="input-config-table">
-									<tr><td>优先匹配模型列表:</td>
-										<td><input id="puterPriorityModelsInput" name="puterPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp" value=""></td>
-									</tr>
-								</table>
-								<h2>登录状态</h2>
-								<p>清除 puter.js 登录状态 (不会删除聊天记录): <button id="reset-puter-data">[LOGOUT]</button></p>
-								<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户.</p>
-								<p>禁用此服务后刷新页面以取消 puter.js 资源加载.</p>
-							</details>
-
-							<details class="think model-service" data-service="OpenAI-API"><summary>OpenAI API</summary>
-								<h2>API 配置</h2>
-								<table class="input-config-table">
-									<tr><td>API 端点:</td>
-										<td><input id="openaiApiEndpointInput" name="openaiApiEndpoint" type="url" placeholder="https://api.openai.com/v1"></td>
-									</tr>
-									<tr><td>API 密钥:</td>
-										<td><input id="openaiApiKeyInput" name="openaiApiKey" type="text" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxx"></td>
-									</tr>
-									<tr><td>优先匹配模型列表:</td>
-										<td><input id="openaiPriorityModelsInput" name="openaiPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
-									</tr>
-								</table>
-							</details>
-
-						</div>
+						<div class="content markdown-body"></div>
 						<div class="msg-footer"></div>
 					</div>
 				</div>

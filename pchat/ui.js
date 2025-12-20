@@ -763,16 +763,18 @@ You are a helpful coding assistant. Answer concisely.
 					// OpenAI 模式
 					if (!cfg.openaiApiEndpoint) models = [];
 					const resp = await fetch(`${cfg.openaiApiEndpoint.replace(/\/+$/, '')}/models`, {
-						headers: { 'Authorization': `Bearer ${cfg.openaiApiKey}` }
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${cfg.openaiApiKey}`
+						},
 					});
 					const data = await resp.json();
 					models = data.data.map(m => ({ id: m.id, name: m.id }));
 				}
 				
 				// 过滤并排序
-				models = models.filter(model => model.id);
-
-				const priorityList = cfg.modelService === 'Puter.js' ? cfg.puterPriorityModels : cfg.openaiPriorityModels;
+				models = models.filter(model => model.id).sort((a, b) => a.name.localeCompare(b.name));
 
 				let createOptionCount = 0;
 				const createOption = (m) => {
@@ -783,7 +785,8 @@ You are a helpful coding assistant. Answer concisely.
 					modelSelect.appendChild(opt);
 				};
 
-				// 优先模型
+				// 优先显示模型
+				const priorityList = cfg.modelService === 'Puter.js' ? cfg.puterPriorityModels : cfg.openaiPriorityModels;
 				priorityList.forEach(pid => {
 					const m = models.find(x => x.id.includes(pid));
 					if (m) createOption(m);
@@ -825,7 +828,6 @@ You are a helpful coding assistant. Answer concisely.
 					yield {
 						text: part.text || '',
 						reasoning: part.reasoning || '',
-						done: false
 					};
 				}
 			}
@@ -841,7 +843,7 @@ You are a helpful coding assistant. Answer concisely.
 						model: model,
 						messages: messages,
 						stream: true,
-					})
+					}),
 				});
 
 				if (!response.ok) {
@@ -869,10 +871,8 @@ You are a helpful coding assistant. Answer concisely.
 							const parsed = JSON.parse(message);
 							const delta = parsed.choices[0].delta;
 							yield {
-								text: delta.content || '',
-								// 兼容 DeepSeek 等模型的思考过程 (reasoning_content)
-								reasoning: delta.reasoning_content || '',
-								done: false
+								text: (delta.content) || '',
+								reasoning: (delta.reasoning ?? delta.reasoning_content) || '',
 							};
 						} catch (e) {
 							console.warn("Skip parse error", e);
@@ -931,30 +931,31 @@ You are a helpful coding assistant. Answer concisely.
 
 				// 2. 循环处理流数据
 				let isRendering = 0;
-				let think = false;
+				let think = 0;
 				let fullText = '';
 				for await (const part of responseStream) {
+					
 					// 处理思考逻辑 (Puter 使用 reasoning 字段, OpenAI 部分模型也支持)
-					if (part.reasoning && !think) {
-						fullText += `<details class="think" open><summary>[THINK]</summary>\n\n`;
-						think = true;
+					if(part.reasoning && think === 0){
+						think = 1;
+						fullText += `<details class="think __pChatSystemElement__" open><summary>[THINK]</summary>\n\n`;
 					}
 					
-					if (part.reasoning) {
+					if(part.reasoning){
 						fullText += part.reasoning;
 					}
 
-					if (part.text) {
-						if (think) {
+					if(part.text){
+						if (think === 1) {
+							think = 2;
 							fullText += `\n\n</details>\n\n`;
-							think = false;
 						}
 						fullText += part.text;
 					}
 
 					// 延迟渲染, 防止卡顿
 					if(isRendering > 1) continue;
-					while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 100));
+					while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 20));
 					isRendering += 1;
 
 					// 渲染新内容
@@ -981,6 +982,13 @@ You are a helpful coding assistant. Answer concisely.
 							return true;
 						},
 					});
+
+					// 第一次思考完毕后折叠思考内容
+					if (think === 2) {
+						think = 3;
+						fullText = fullText.replace(`<details class="think __pChatSystemElement__" open>`, `<details class="think __pChatSystemElement__">`);
+						uiElements.contentDiv.querySelector('.think').open = false;
+					}
 
 					// 等待浏览器刷新一帧
 					requestAnimationFrame(() => {
@@ -1457,6 +1465,52 @@ You are a helpful coding assistant. Answer concisely.
 
 	// --- CONFIG PAGE ---
 	if(true){
+
+		// 加载配置页面内容
+		document.querySelector('#config .content').innerHTML = `
+<h2>导入 / 导出</h2>
+<p>在这里导入导出所有会话:
+	<button id="import-btn">[IMPORT]</button>
+	<button id="export-btn">[EXPORT]</button>
+	<input type="file" id="import-input" accept=".json" style="display: none;">
+</p>
+
+<h2>模型服务</h2>
+<p>关闭配置页面后自动刷新模型列表.</p>
+
+<details class="think model-service" data-service="Puter.js" open><summary>Puter.js</summary>
+	<h2>优先显示模型</h2>
+	<table class="input-config-table">
+		<tr><td>优先匹配模型列表:</td>
+			<td><input id="puterPriorityModelsInput" name="puterPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp" value=""></td>
+		</tr>
+	</table>
+	<h2>登录状态</h2>
+	<p>清除 puter.js 登录状态 (不会删除聊天记录): <button id="reset-puter-data">[LOGOUT]</button></p>
+	<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户.</p>
+	<p>禁用此服务后刷新页面以取消 puter.js 资源加载.</p>
+</details>
+
+<details class="think model-service" data-service="OpenAI-API"><summary>OpenAI API</summary>
+	<h2>API 配置</h2>
+	<table class="input-config-table">
+		<tr><td>API 端点:</td>
+			<td><input id="openaiApiEndpointInput" name="openaiApiEndpoint" type="url" placeholder="https://api.openai.com/v1"></td>
+		</tr>
+		<tr><td>API 密钥:</td>
+			<td><input id="openaiApiKeyInput" name="openaiApiKey" type="text" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxx"></td>
+		</tr>
+		<tr><td>优先匹配模型列表:</td>
+			<td><input id="openaiPriorityModelsInput" name="openaiPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
+		</tr>
+	</table>
+	<p>
+		推荐使用 <a href="https://github.com/xixu-me/Xget?tab=readme-ov-file#ai-inference-providers" target="_blank">Xget</a> 代理,
+		通过我们的部署, 例如: <code>https://xget.ipacel.cc/ip/openrouter/api/v1</code>
+	</p>
+</details>
+`;
+
 		const configBtn = document.getElementById('config-btn');
 		const importBtn = document.getElementById('import-btn');
 		const exportBtn = document.getElementById('export-btn');
