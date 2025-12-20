@@ -1,16 +1,13 @@
 
-const CACHE_NAME = 'v1';
+const CACHE_NAME = 'v2';
 
 self.addEventListener('install', (event) => {
 	self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-	event.waitUntil(async () => {
-		// 清理旧缓存
-		const keys = await caches.keys();
-		return Promise.all(keys.map(key => key !== CACHE_NAME && caches.delete(key)));
-	});
+self.addEventListener('activate', async (event) => {
+	const keys = await caches.keys();
+	return Promise.all(keys.map(key => key !== CACHE_NAME && caches.delete(key)));
 });
 
 self.addEventListener('fetch', (event) => {

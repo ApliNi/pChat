@@ -791,14 +791,14 @@ You are a helpful coding assistant. Answer concisely.
 				}
 				
 				// 过滤并排序
-				models = models.filter(model => model.id).sort((a, b) => a.name.localeCompare(b.name));
+				models = models.filter(model => model.id).sort((a, b) => a.id.localeCompare(b.id));
 
 				let createOptionCount = 0;
 				const createOption = (m) => {
 					createOptionCount ++;
 					const opt = document.createElement('option');
 					opt.value = m.id;
-					opt.innerText = m.name;
+					opt.innerText = m.id;
 					modelSelect.appendChild(opt);
 				};
 
@@ -995,7 +995,7 @@ You are a helpful coding assistant. Answer concisely.
 
 					// 第一次思考完毕后折叠思考内容
 					if (think === 2) {
-						think = 3;
+						think = 0;
 						fullText = fullText.replace(`<details class="think __pChatSystemElement__" open>`, `<details class="think __pChatSystemElement__">`);
 						uiElements.contentDiv.querySelector('.think').open = false;
 					}
@@ -1553,6 +1553,8 @@ You are a helpful coding assistant. Answer concisely.
 				}, 100);
 				// 保存选择的服务
 				cfg.setItem('modelService', service);
+				// 切换服务后刷新模型列表, 忽略页面加载时的触发
+				if(interacted) openaiApiModify = true;
 			});
 		}
 		

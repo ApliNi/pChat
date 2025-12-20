@@ -512,6 +512,9 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	margin-bottom: 14px;
 	cursor: default;
 }
+.markdown-body details:open + * {
+	margin-top: 0;
+}
 .markdown-body details.think summary {
 	color: var(--sys-msg-color);
 	font-weight: bold;
