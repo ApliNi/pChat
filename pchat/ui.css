@@ -489,7 +489,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: #000; }
 ::-webkit-scrollbar-thumb { background: #333; }
-::-webkit-scrollbar-thumb:hover { background: #555; }
+::-webkit-scrollbar-thumb:hover { background: #555; cursor: default; }
 ::-webkit-scrollbar-corner { background: #333; }
 
 ::selection { background: #34beff33; }
@@ -669,8 +669,8 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 /* 代码块：深色背景，无圆角 */
 .markdown-body pre {
-	background: #00000069;
-	border: 1px solid #2a2a2a;
+	background: #0c0c0ce0;
+	border: 1px solid var(--border-color);
 	padding: 10px;
 	border-radius: 0px;
 	overflow-x: auto;
@@ -788,7 +788,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .config input {
 	appearance: none;
 	-webkit-appearance: none;
-	background: #000;
+	background: #0c0c0ce0;
 	color: var(--text-color);
 	border: 1px solid var(--border-color);
 	padding: 4px 10px;
