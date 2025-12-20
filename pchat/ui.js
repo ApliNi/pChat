@@ -315,7 +315,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		}
 	}
 
-	async function saveSessionMetaLocal(session) {
+	async function saveSessionMetaLocal(session, _renderSidebar = true) {
 		// Find if exists and update, or push
 		const idx = sessions.findIndex(s => s.id === session.id);
 		if (idx !== -1) {
@@ -324,7 +324,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			sessions.push(session);
 		}
 		await IDBManager.saveSessionMeta(session);
-		renderSidebar();
+		if(_renderSidebar) renderSidebar();
 	}
 
 	async function saveCurrentSession() {
@@ -544,7 +544,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 		}
 	}
 
-	async function updateTitle(title) {
+	async function updateTitle(_title) {
+		const title = _title || 'New Session';
 		if (window.matchMedia('(display-mode: standalone)').matches) {
 			document.title = `${title}`;
 			return;
@@ -660,7 +661,7 @@ You are a helpful coding assistant. Answer concisely.
 		
 		const newSession = {
 			id: newId,
-			title: 'New Session',
+			title: '',
 			timestamp: Date.now(),
 		};
 
@@ -679,7 +680,7 @@ You are a helpful coding assistant. Answer concisely.
 		
 		renderSidebar();
 		userInput.focus();
-		updateTitle('New Session');
+		updateTitle();
 
 		// 震动反馈
 		vibrate(25);
@@ -689,8 +690,9 @@ You are a helpful coding assistant. Answer concisely.
 		const session = sessions.find(s => s.id === currentSessionId);
 		if (session && session.title === '') {
 			session.title = userText.trim().substring(0, 47).replace(/\s+/g, ' ');
-			await saveSessionMetaLocal(session);
+			await saveSessionMetaLocal(session, false);
 			updateTitle(session.title);
+			historyList.querySelector(`[data-session-id="${currentSessionId}"] .history-title`).innerText = session.title;
 		}
 	}
 
