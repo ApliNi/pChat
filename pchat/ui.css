@@ -543,6 +543,16 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	margin: 0.8em 0;
 }
 
+.markdown-body img,
+.markdown-body video {
+	max-width: 100%;
+}
+
+.markdown-body iframe {
+	max-width: 100%;
+	border: none;
+}
+
 /* 列表：紧凑布局 */
 .markdown-body ul, .markdown-body ol {
 	padding-left: 25px;
