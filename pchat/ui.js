@@ -334,6 +334,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 	async function deleteSession(e, sessionId) {
 		e.stopPropagation();
+		// 不能删除正在运行的会话
+		if(isProcessing && cfg.lastSessionId === sessionId) return;
+
+		// 确认删除
 		if (!confirm('确认: 永久删除这个会话')) return;
 
 		// 1. 从内存和数据库中移除
