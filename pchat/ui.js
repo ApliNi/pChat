@@ -518,7 +518,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		minimap.innerHTML = '';
 		
 		for(const msg of chatHistory){
-			const els = appendMessageToDOM({ ...msg, animate: false });
+			const els = await appendMessageToDOM({ ...msg, animate: false });
 			els.contentDiv.classList.remove('cursor');
 		}
 		
@@ -697,7 +697,7 @@ You are a helpful coding assistant. Answer concisely.
 			const userMsgId = generateId();
 			const userMsg = { role: 'user', content: text, id: userMsgId };
 			chatHistory.push(userMsg);
-			appendMessageToDOM({ role: 'user', content: text, id: userMsgId });
+			await appendMessageToDOM({ role: 'user', content: text, id: userMsgId });
 
 			await saveCurrentSession();
 			// 不等待 AI 回复
@@ -713,7 +713,7 @@ You are a helpful coding assistant. Answer concisely.
 					top: rightPanel.scrollHeight,
 					behavior: 'smooth',
 				});
-			}, 1);
+			}, 10);
 		}
 	}
 
@@ -1049,7 +1049,7 @@ You are a helpful coding assistant. Answer concisely.
 		},
 	};
 
-	function appendMessageToDOM({
+	async function appendMessageToDOM({
 		role,
 		content,
 		id,
@@ -1124,9 +1124,7 @@ You are a helpful coding assistant. Answer concisely.
 			} else {
 				// 立即渲染未折叠的消息
 				if (content) {
-					worker.run('renderMarkdown', content).then((html) => {
-						contentArea.innerHTML = DOMPurify.sanitize(html, DOMPurifyConfig);
-					});
+					contentArea.innerHTML = DOMPurify.sanitize(await worker.run('renderMarkdown', content), DOMPurifyConfig);
 					// contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content), DOMPurifyConfig);
 				}
 			}
