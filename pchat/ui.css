@@ -66,6 +66,10 @@ body > * {
 	animation: enterOpacity 1.6s ease;
 }
 
+@view-transition {
+	navigation: auto;
+}
+
 /* --- Global Header --- */
 header {
 	border-bottom: 1px solid var(--border-color);
