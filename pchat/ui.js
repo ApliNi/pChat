@@ -196,10 +196,24 @@ window.addEventListener('DOMContentLoaded', async () => {
 			});
 		},
 
+		delConfig(id) {
+			return new Promise(async (resolve, reject) => {
+				const tx = this.db.transaction('config', 'readwrite');
+				const store = tx.objectStore('config');
+				const request = store.delete(id);
+				request.onsuccess = () => resolve();
+				request.onerror = () => reject();
+			});
+		},
+
 		importBackup(data) {
 			return new Promise((resolve, reject) => {
 				const tx = this.db.transaction(['sessions', 'chats', 'config'], 'readwrite');
 
+				const configStore = tx.objectStore('config');
+				if (Array.isArray(data.config)) {
+					data.config.forEach(cfg => configStore.put(cfg));
+				}
 				const sessionStore = tx.objectStore('sessions');
 				if (Array.isArray(data.sessions)) {
 					data.sessions.forEach(session => sessionStore.put(session));
@@ -207,10 +221,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 				const chatStore = tx.objectStore('chats');
 				if (Array.isArray(data.chats)) {
 					data.chats.forEach(chat => chatStore.put(chat));
-				}
-				const configStore = tx.objectStore('config');
-				if (Array.isArray(data.config)) {
-					data.config.forEach(cfg => configStore.put(cfg));
 				}
 
 				tx.oncomplete = () => resolve();
@@ -983,14 +993,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 					});
 
 					if (think === 1) {
-						uiElements.contentDiv.querySelector('.think').open = true;
+						uiElements.contentDiv.querySelector('.think.__pChat__').open = true;
 					}
 
 					// 思考完毕后折叠思考内容
 					if (think === 2) {
 						think = 0;
 						setTimeout(() => {
-							uiElements.contentDiv.querySelector('.think').open = false;
+							uiElements.contentDiv.querySelector('.think.__pChat__').open = false;
 						}, 200);
 					}
 
@@ -1661,16 +1671,12 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			exportBtn.innerText += '...';
 
 			try {
-				// 1. 获取所有数据
-				const sessionsData = await IDBManager.getAllSessions();
-				const chatsData = await IDBManager.getAllChats();
-
-				// 2. 构造 JSON 对象
 				const backupData = {
-					version: 1,
 					timestamp: Date.now(),
-					sessions: sessionsData,
-					chats: chatsData
+					version: IDBManager.version,
+					config: await IDBManager.getConfig(),
+					sessions: await IDBManager.getAllSessions(),
+					chats: await IDBManager.getAllChats(),
 				};
 
 				// 3. 创建 Blob 并下载
@@ -1807,4 +1813,10 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			}
 		}
 	}
+
+	// 删除旧数据
+	setTimeout(async () => {
+		await IDBManager.delConfig('puter_priorityModels');
+	}, 2000);
+
 });
