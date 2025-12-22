@@ -314,6 +314,10 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	letter-spacing: 0.5px;
 }
 
+.role-label + * {
+	margin-top: -5px;
+}
+
 .content {
 	word-break: break-all; margin-bottom: 6px;
 	outline: none; transition: background 0.2s; background: rgba(255,255,255,0);
@@ -399,6 +403,56 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	margin-top: auto;
 }
 
+/* 粘贴图片的预览容器 */
+.image-preview-container, .preview-content {
+	max-width: 800px;
+	margin: 0 auto 0 auto;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+/* 预览条目：半透明绿 + 虚线边框 */
+.preview-item {
+	display: flex;
+	align-items: center;
+	background: rgba(0, 255, 0, 0.05);
+	border: 1px dashed var(--user-msg-color);
+	padding: 5px;
+	margin-bottom: 10px;
+	gap: 4px;
+	animation: fadeIn 0.2s ease;
+}
+
+.preview-item img {
+	height: 24px;
+	width: 24px;
+	object-fit: cover;
+	border: 1px solid var(--user-msg-color);
+}
+
+.preview-item .file-info {
+	font-family: var(--font-stack);
+	font-size: 10px;
+	padding-left: 5px;
+	color: var(--user-msg-color);
+	max-width: 90px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.preview-item .remove-img {
+	cursor: pointer;
+	color: var(--meta-color);
+	font-weight: bold;
+	padding: 3px 4px;
+	transition: all 0.2s;
+}
+.preview-item .remove-img:hover {
+	color: var(--danger-color);
+}
+
 .input-group {
 	max-width: 800px;
 	margin: 0 auto;
@@ -427,6 +481,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 
 #send-btn {
+	width: 83px;
 	background: #111; color: var(--text-color);
 	border: none; border-left: 1px solid var(--border-color);
 	padding: 0 25px; font-family: var(--font-stack);
@@ -435,6 +490,23 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 #send-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
 #send-btn:disabled { background: #111; color: #444; cursor: not-allowed; }
+
+#attached-image-btn {
+	position: absolute;
+	top: 6px;
+	right: 96px;
+	background: transparent;
+	color: #fff;
+	opacity: 0.6;
+	border: none;
+	padding: 7px;
+	font-family: var(--font-stack);
+	cursor: pointer;
+	font-weight: bold;
+	transition: all 0.2s;
+	line-height: 0;
+}
+#attached-image-btn:hover { opacity: 1; }
 
 .cursor::after { content: '█'; animation: blink 1s step-end infinite; margin-left: 2px; color: var(--ai-msg-color); }
 
@@ -494,13 +566,17 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 ::selection { background: #34beff33; }
 
+.preview-content {
+	margin-left: 0;
+	/* margin-right: 0; */
+}
+
 /* --- Compact Terminal Markdown Style --- */
 .markdown-body {
 	font-family: var(--font-stack);
 	color: var(--text-color);
 	background: transparent;
 	word-wrap: break-word;
-	margin-top: -5px;
 }
 
 .markdown-body details {

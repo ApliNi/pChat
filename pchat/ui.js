@@ -256,7 +256,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 	const sidebarToggle = document.getElementById('sidebar-toggle');
 	const rightPanel = document.getElementById('right-panel');
 	const messageArea = document.getElementById('message-area');
+	const imagePreviewContainer = document.getElementById('image-preview-container');
 	const userInput = document.getElementById('user-input');
+	const attachedImageBtn = document.getElementById('attached-image-btn');
+	const attachedImageInput = document.getElementById('attached-image-input');
 	const sendBtn = document.getElementById('send-btn');
 	const statusDot = document.getElementById('status-dot');
 	const modelSelect = document.getElementById('model-select');
@@ -267,6 +270,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 	// --- State Management ---
 	let chatHistory = [];
+	let attachedImages = []; // 存储当前待发送的图片 [{id, base64, name}]
 	let isProcessing = false;
 	let sessions = [];
 	let isAutoScroll = true;
@@ -568,14 +572,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			timestamp: 0,
 		};
 
-		// 2. 定义预设的聊天记录
-		const introMessages = [
-			{
-				role: 'system',
-				id: 'msg_system_intro',
-				isCollapsed: false,
-				isRaw: false,
-				content: `
+		const text = `
 # [ pChat - AI Chat Terminal ]
 
 这是一个轻量级本地化 AI 聊天终端, 在浏览器上可用: https://pchat.ipacel.cc/
@@ -591,17 +588,21 @@ window.addEventListener('DOMContentLoaded', async () => {
 - 设置: 点击左侧边栏下方的 [CONFIG] 按钮进入设置页面.
 - 置顶窗口: 点击左侧边栏下方的 [PIP] 按钮打开画中画窗口.
 - 小地图: 界面右侧的小地图可以快速定位到消息位置.
+- 输入框: 支持粘贴图片 / 点击上传图标上传图片.
 
 ## 消息框
 - 身份显示:
-- 系统提示词显示为 SYSTEM (蓝色消息框)
-- 用户消息显示为 USER (绿色消息框)
-- AI 消息显示为对应模型的名称 (灰色消息框).
+	- 系统提示词显示为 SYSTEM (蓝色消息框)
+	- 用户消息显示为 USER (绿色消息框)
+	- AI 消息显示为对应模型的名称 (灰色消息框).
 - 切换格式: 点击右上角 [RENDER] / [RAW] 切换渲染消息或原始内容.
 - 折叠消息: 点击右上角 [+] / [-] 切换折叠消息, 同时小地图中的对应消息框会变为半透明.
 - 重新生成: 点击左下角 [REGEN] 按钮重新生成 AI 消息.
 - 分支消息: 点击左下角 [FORK] 按钮从这里创建新聊天.
 - 删除消息: 点击左下角 [DEL] 按钮删除这条消息, 不影响其他消息.
+
+## 数据解析
+- 图片: 支持添加任意浏览器支持的图片格式, 自动转换为 PNG 格式使用.
 
 ## 消息渲染
 - 默认仅自动渲染 AI 消息.
@@ -638,7 +639,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 注意: 这个欢迎会话始终自动重置.
 > 点击左上角 \`[ + NEW SESSION ]\` 创建一个新会话.
-`.trim(),	},
+`.trim();
+
+		// 2. 定义预设的聊天记录
+		const introMessages = [
+			{
+				role: 'system',
+				id: 'msg_system_intro',
+				isCollapsed: false,
+				isRaw: false,
+				content: [
+					{ type: 'text', text: text },
+				],
+			},
 		];
 
 		// 3. 强制写入/覆盖到数据库 (IndexedDB)
@@ -703,12 +716,21 @@ window.addEventListener('DOMContentLoaded', async () => {
 			userInput.value = '';
 			userInput.style.height = '0px';
 
-			await updateSessionTitleIfNeeded(text);
+			const msgContent = [
+				...attachedImages,
+				{ type: 'text', text: text || '' },
+			];
+
+			await updateSessionTitleIfNeeded(text || '[Image]');
 
 			const userMsgId = generateId();
-			const userMsg = { role: 'user', content: text, id: userMsgId };
+			const userMsg = { role: 'user', content: msgContent, id: userMsgId };
 			chatHistory.push(userMsg);
-			await appendMessageToDOM({ role: 'user', content: text, id: userMsgId });
+			await appendMessageToDOM(userMsg);
+
+			// 重置附件
+			attachedImages = [];
+			renderImagePreviews();
 
 			await saveCurrentSession();
 			// 不等待 AI 回复
@@ -894,24 +916,24 @@ window.addEventListener('DOMContentLoaded', async () => {
 			}
 		},
 
-		// 渲染消息
-		async performAIRequest(targetId = null) {
+		// LLM 请求并渲染消息
+		async performAIRequest(msgId = null) {
 			if (isProcessing) return;
 			
 			const currentModel = modelSelect.value;
 			toggleState(true);
 
-			let aiMsgId, contextHistory, uiElements;
+			let msgDiv, contextHistory, uiElements;
 
-			if (targetId) {
-				aiMsgId = targetId;
-				const targetIndex = chatHistory.findIndex(m => m.id === targetId);
+			if (msgId) {
+				const targetIndex = chatHistory.findIndex(m => m.id === msgId);
 				if (targetIndex === -1) { toggleState(false); return; }
 				contextHistory = chatHistory.slice(0, targetIndex);
 				
-				const msgDiv = document.getElementById(targetId);
+				msgDiv = document.getElementById(msgId);
 				const contentDiv = msgDiv.querySelector('.content');
 				const metaDiv = msgDiv.querySelector('.meta-stats');
+				msgDiv.classList.add('isProcessing');
 				msgDiv.dataset.rendered = 'true';
 				msgDiv.querySelector('.btn-toggle').innerText = '[RAW]';
 				contentDiv.contentEditable = 'false'; // 生成时禁止编辑
@@ -922,9 +944,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 				contentDiv.classList.add('cursor'); // 激活光标
 				uiElements = { contentDiv, metaDiv };
 			} else {
-				aiMsgId = generateId();
+				msgId = generateId();
 				contextHistory = [...chatHistory];
-				uiElements = await appendMessageToDOM({ role: 'assistant', content: '', id: aiMsgId, model: currentModel });
+				uiElements = await appendMessageToDOM({ role: 'assistant', content: '', id: msgId, model: currentModel });
+				msgDiv = document.getElementById(msgId);
+				msgDiv.classList.add('isProcessing');
 				uiElements.contentDiv.classList.add('cursor'); // 新消息也激活光标
 			}
 
@@ -937,7 +961,22 @@ window.addEventListener('DOMContentLoaded', async () => {
 			}, 100);
 
 			try {
-				const apiHistory = contextHistory.map(({role, content}) => ({role, content}));
+
+				// 过滤无关的数据
+				const apiHistory = contextHistory.map(({role, content}) => {
+					if(!Array.isArray(content)) content = [ { type: 'text', text: content } ];
+
+					const _content = content.map((c) => { switch (c.type) {
+						case 'text':
+							return { type: c.type, text: c.text };
+						case 'image_url':
+							return { type: c.type, image_url: { url: c.image_url.url } };
+						default:
+							return c;
+					}});
+
+					return { role: role, content: _content };
+				});
 
 				const responseStream = AIService.chat(apiHistory, currentModel);
 
@@ -1025,11 +1064,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 				// 震动反馈
 				vibrate(50);
 
+				const finalContent = [{ type: 'text', text: fullText }]; // 包装成数组
+
 				// 4. 更新内存中的历史记录
-				if (targetId) {
-					const targetIndex = chatHistory.findIndex(m => m.id === targetId);
+				if (msgId) {
+					const targetIndex = chatHistory.findIndex(m => m.id === msgId);
 					if (targetIndex !== -1) {
-						chatHistory[targetIndex].content = fullText;
+						chatHistory[targetIndex].content = finalContent;
 						chatHistory[targetIndex].model = currentModel;
 						// [新增] 保存统计信息
 						chatHistory[targetIndex].stats = statsText;
@@ -1037,8 +1078,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 				} else {
 					chatHistory.push({
 						role: 'assistant',
-						content: fullText,
-						id: aiMsgId,
+						content: finalContent,
+						id: msgId,
 						model: currentModel,
 						stats: statsText,
 					});
@@ -1056,8 +1097,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 			} finally {
 				// 移除光标样式，恢复按钮状态
 				uiElements.contentDiv.classList.remove('cursor');
+				msgDiv.classList.remove('isProcessing');
 				toggleState(false);
-				if (!targetId) scrollToBottom();
+				if (!msgId) scrollToBottom();
 			}
 		},
 	};
@@ -1115,8 +1157,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 					${`<button class="action-btn btn-collapse" onclick="toggleMessageCollapse('${id}', this)" data-is-collapsed="${isCollapsed}">${isCollapsed ? '[+]' : '[-]'}</button>`}
 				</div>
 			</span>
-			<!-- [修改] 添加 collapsedClass -->
-			<div class="content markdown-body ${(role === 'assistant' && content === '' && cursor) ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
+			
+			<div class="preview-content ${isCollapsed ? 'collapsed' : ''}"></div>
+			<div class="content markdown-body ${(role === 'assistant' && cursor) ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
 				<div class="meta-stats"></div>
@@ -1129,23 +1172,40 @@ window.addEventListener('DOMContentLoaded', async () => {
 				toggleMessageCollapse(id, msgDiv.querySelector('.role-header-right .btn-collapse'));
 			}
 		});
+
+		// 兼容旧格式
+		const contentArray = Array.isArray(content) ? content : [{ type: 'text', text: content || '' }];
 		
+		const previewContentArea = msgDiv.querySelector('.preview-content');
 		const contentArea = msgDiv.querySelector('.content');
-		
-		if (isRendered) {
-			if (isCollapsed) {
-				// 延迟渲染折叠的消息
-				contentArea.textContent = content;
-				contentArea.dataset.lazy = 'true';
-			} else {
-				// 立即渲染未折叠的消息
-				if (content) {
-					contentArea.innerHTML = DOMPurify.sanitize(await worker.run('renderMarkdown', content), DOMPurifyConfig);
-					// contentArea.innerHTML = DOMPurify.sanitize(marked.parse(content), DOMPurifyConfig);
+
+		// 始终渲染所有图片
+		for(const item of contentArray){
+			if(item.type === 'image_url'){
+				previewContentArea.innerHTML += `
+					<div id="${item.id}" class="preview-item">
+						<img src="${item.image_url.url}">
+						<span class="file-info">${item.name}</span>
+						<span class="remove-img" onclick="removeAttachedImage('${item.id}', '${id}')">&times;</span>
+					</div>
+				`;
+			}
+		}
+
+		if (isRendered && !isCollapsed) {
+			// 正常渲染
+			for(const item of contentArray){
+				if(item.type === 'text'){
+					contentArea.innerHTML += DOMPurify.sanitize(await worker.run('renderMarkdown', item.text), DOMPurifyConfig);
 				}
 			}
 		} else {
-			contentArea.textContent = content;
+			// 显示摘要
+			for(const item of contentArray){
+				if(item.type === 'text'){
+					contentArea.textContent += item.text;
+				}
+			}
 		}
 
 		if (stats) {
@@ -1175,7 +1235,16 @@ window.addEventListener('DOMContentLoaded', async () => {
 	async function updateHistoryContent(id, newText) {
 		const item = chatHistory.find(m => m.id === id);
 		if (item) {
-			item.content = newText;
+			if(Array.isArray(item.content)){
+				for(const c of item.content){
+					if(c.type === 'text'){
+						c.text = newText;
+						break;
+					}
+				}
+			}else{
+				item.content = newText;
+			}
 			await saveCurrentSession();
 		}
 	}
@@ -1206,14 +1275,61 @@ window.addEventListener('DOMContentLoaded', async () => {
 		}
 	}
 
+	function renderImagePreviews(attachedImageElement = null, meta = null) {
+		if(attachedImageElement && meta){
+			const div = document.createElement('div');
+			div.className = 'preview-item';
+			div.innerHTML = `
+				<span class="file-info">${meta.name}</span>
+				<span class="remove-img" onclick="removeAttachedImage('${meta.id}', 'userInput')">&times;</span>
+			`;
+			div.insertBefore(attachedImageElement, div.firstChild);
+			imagePreviewContainer.appendChild(div);
+			return;
+		}
+		imagePreviewContainer.innerHTML = attachedImages.map((img) => `
+			<div class="preview-item">
+				<img src="${img.image_url.url}">
+				<span class="file-info">${img.name}</span>
+				<span class="remove-img" onclick="removeAttachedImage('${img.id}', 'userInput')">&times;</span>
+			</div>
+		`).join('');
+	}
+
+	async function attachedImage(fileName, imageBase64){
+		const img = new Image();
+		await new Promise((resolve) => {
+			img.src = imageBase64;
+			img.onload = resolve;
+		});
+		let zoom = 1;
+		const canvas = document.createElement('canvas');
+		canvas.width = img.width * zoom;
+		canvas.height = img.height * zoom;
+		canvas.getContext('2d').drawImage(img, 0, 0, img.width * zoom, img.height * zoom);
+		const pngBase64 = canvas.toDataURL('image/png');
+
+		// 如果 imageBase64 重复就不添加
+		if(attachedImages.some(img => img.image_url.url === pngBase64)) return;
+
+		const imgId = 'img_' + Date.now() + Math.random();
+		attachedImages.push({
+			type: 'image_url',
+			image_url: { url: pngBase64 },
+			id: imgId,
+			name: fileName.replace(/\.[^\.]*$/, ''),
+		});
+		renderImagePreviews(img, attachedImages.at(-1));
+	}
+
 	window.regenerateMessage = function(id) {
 		if (isProcessing) return;
 		AIService.performAIRequest(id);
 	}
 
 	window.toggleMessageView = async function(id) {
-		// 如果正在生成回复，暂不建议切换，防止流式传输冲突（可选限制）
-		if (isProcessing) return;
+		// 不能切换正在处理中的消息
+		if (isProcessing && document.getElementById(id).classList.contains('isProcessing')) return;
 
 		const msgDiv = document.getElementById(id);
 		if (!msgDiv) return;
@@ -1227,7 +1343,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		// 获取当前对应的历史消息内容
 		const msgItem = chatHistory.find(m => m.id === id);
 		if (!msgItem) return;
-		const rawContent = msgItem.content;
+		const rawContent = msgItem.content.find(c => c.type === 'text')?.text ?? '';
 
 		if (isRendered) {
 			// === 切换到源码模式 (RAW) ===
@@ -1270,7 +1386,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		await saveCurrentSession();
 	}
 
-	// --- 新增：折叠/展开消息 ---
+	// --- 折叠/展开消息 ---
 	window.toggleMessageCollapse = async function(id, btn) {
 		const msgDiv = document.getElementById(id);
 		if (!msgDiv) return;
@@ -1423,6 +1539,22 @@ window.addEventListener('DOMContentLoaded', async () => {
 		await switchSession(newSessionId);
 	}
 
+	window.removeAttachedImage = (imgId, msgId) => {
+		if(msgId === 'userInput'){
+			attachedImages = attachedImages.filter(img => img.id !== imgId);
+			renderImagePreviews();
+		} else {
+			if(isProcessing) return;
+			// 从当前聊天中删除图片并保存
+			const msg = chatHistory.find(msg => msg.id === msgId);
+			if(msg){
+				msg.content = msg.content.filter(item => item.id !== imgId);
+				saveCurrentSession();
+				document.getElementById(imgId).remove();
+			}
+		}
+	};
+
 	// 监听模型改变，保存用户偏好
 	modelSelect.addEventListener('change', () => {
 		cfg.setItem('lastModel', modelSelect.value);
@@ -1443,6 +1575,42 @@ window.addEventListener('DOMContentLoaded', async () => {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			handleSend();
+		}
+	});
+
+	userInput.addEventListener('paste', async (e) => {
+		const items = Array.from(e.clipboardData?.items || e.originalEvent.clipboardData?.items);
+		// 立即请求文件, 防止被清空
+		const files = items.map(i => i.getAsFile());
+		for(const file of files){
+			if(!file.type.startsWith('image')) continue;
+			await new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onload = async (event) => {
+					await attachedImage(file.name || 'image', event.target.result);
+					resolve();
+				};
+				reader.readAsDataURL(file);
+			});
+		}
+	});
+
+	attachedImageBtn.addEventListener('click', () => {
+		attachedImageInput.value = '';
+	    attachedImageInput.click();
+	});
+
+	attachedImageInput.addEventListener('change', async (e) => {
+	    const files = e.target.files;
+		for(const file of files){
+			await new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onload = async (event) => {
+					await attachedImage(file.name || 'image', event.target.result);
+					resolve();
+				};
+				reader.readAsDataURL(file);
+			});
 		}
 	});
 
