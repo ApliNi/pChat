@@ -538,7 +538,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 		minimap.innerHTML = '';
 		
 		for(const msg of chatHistory){
-			const els = await appendMessageToDOM({ ...msg, animate: false, cursor: false });
+			const els = await appendMessageToDOM({ ...msg, animate: false });
 		}
 
 		messageArea.style.display = 'flex';
@@ -944,7 +944,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 				msgDiv.querySelector('.role-label span:first-child').innerText = currentModel.toUpperCase();
 				
 				contentDiv.textContent = '';
-				contentDiv.classList.add('cursor'); // 激活光标
 				uiElements = { contentDiv, metaDiv, msgDiv, };
 			} else {
 				contextHistory = [...chatHistory];
@@ -961,8 +960,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 				uiElements = await appendMessageToDOM(thisContext);
 				msgDiv = uiElements.msgDiv;
 				msgDiv.classList.add('isProcessing');
-				uiElements.contentDiv.contentEditable = 'false'; // 生成时禁止编辑
-				uiElements.contentDiv.classList.add('cursor'); // 新消息也激活光标
 			}
 
 			uiElements.metaDiv.style.color = '';
@@ -1021,9 +1018,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 					while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 20));
 					isRendering += 1;
 
+					let tempFullText = fullText;
+					if(think === 1) tempFullText += `\n\n</details>\n\n`;
+
 					// 渲染新内容
-					const newHtmlContent = DOMPurify.sanitize(await worker.run('renderMarkdown', fullText), DOMPurifyConfig);
-					// const newHtmlContent = DOMPurify.sanitize(marked.parse(fullText), DOMPurifyConfig);
+					const newHtmlContent = DOMPurify.sanitize(await worker.run('renderMarkdown', tempFullText), DOMPurifyConfig);
 					morphdom(uiElements.contentDiv, `<div>${newHtmlContent}</div>`, {
 						childrenOnly: true,
 						onBeforeElUpdated: (from, to) => {
@@ -1064,37 +1063,35 @@ window.addEventListener('DOMContentLoaded', async () => {
 					scrollToBottom();
 				}
 
-				// 3. 传输结束后的统计
+				// 传输结束后的统计
 				clearInterval(timerInterval);
 				const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 				const estimatedTokens = Math.max(1, Math.round(fullText.length / 2.5)); // 估算 Token
 				const tps = (estimatedTokens / duration).toFixed(1);
-				
-				// [修改] 定义统计文本变量
+				// 定义统计文本变量
 				const statsText = `Time: ${duration}s | ${tps} Token/s`;
 				uiElements.metaDiv.innerText = statsText;
 
-				// 震动反馈
-				vibrate(50);
-
-				// 4. 更新内存中的历史记录
+				// 更新内存中的历史记录
 				const finalContent = [ { type: 'text', text: fullText } ];
 				chatHistory[msgIdx].content = finalContent;
 				chatHistory[msgIdx].model = currentModel;
 				chatHistory[msgIdx].stats = statsText;
 
-				// 5. 最后再一次性保存到 IndexedDB (避免频繁 IO)
+				// 最后再一次性保存到 IndexedDB (避免频繁 IO)
 				await saveCurrentSession();
+
+				// 震动反馈
+				vibrate(50);
 
 			} catch (err) {
 				clearInterval(timerInterval);
 				console.error(err);
-				uiElements.contentDiv.textContent += `\n\n[SYSTEM ERROR]: ${err.message}`;
+				uiElements.contentDiv.innerHTML += `<br />`;
+				uiElements.contentDiv.textContent += `[SYSTEM ERROR]: ${err.message}`;
 				uiElements.metaDiv.innerText = `FAIL`;
 				uiElements.metaDiv.style.color = '#ff3333';
 			} finally {
-				// 移除光标样式，恢复按钮状态
-				uiElements.contentDiv.classList.remove('cursor');
 				msgDiv.classList.remove('isProcessing');
 				toggleState(false);
 				if (!msgId) scrollToBottom();
@@ -1111,7 +1108,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 		stats = null,
 		isCollapsed = false,
 		isRaw = undefined,
-		cursor = true,
 		display = '',
 	}) {
 		const msgDiv = document.createElement('div');
@@ -1157,7 +1153,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			</span>
 			
 			<div class="preview-content ${isCollapsed ? 'collapsed' : ''}"></div>
-			<div class="content markdown-body ${(role === 'assistant' && cursor) ? 'cursor' : ''} ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
+			<div class="content markdown-body ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
 				<div class="meta-stats"></div>

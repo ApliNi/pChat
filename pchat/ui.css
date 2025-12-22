@@ -508,7 +508,12 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 #attached-image-btn:hover { opacity: 1; }
 
-.cursor::after { content: '█'; animation: blink 1s step-end infinite; margin-left: 2px; color: var(--ai-msg-color); }
+.message.isProcessing .content::after {
+	content: '█';
+	animation: blink 1s step-end infinite;
+	margin-left: 2px;
+	color: var(--ai-msg-color);
+}
 
 /* --- Minimap (Right Sidebar) --- */
 #minimap {
