@@ -1789,10 +1789,13 @@ You are a helpful coding assistant. Answer concisely.</pre>
 
 		// --- 配置页面 ---
 
+		// 记住滚动条状态
+		let rightPanelScrollTop = 0;
 		// 打开配置界面
 		configBtn.addEventListener('click', async () => {
 			configBtn.classList.toggle('open');
 			if(configBtn.classList.contains('open')){
+				rightPanelScrollTop = rightPanel.scrollTop;
 
 				// 重新填充默认提示词
 				defaultSystemPromptInput.textContent = cfg.defaultSystemPrompt;
@@ -1812,6 +1815,8 @@ You are a helpful coding assistant. Answer concisely.</pre>
 				newChatBtn.style.pointerEvents = '';
 				historyList.style.pointerEvents = '';
 				rightPanel.querySelector('& > .config').style.display = 'none';
+
+				rightPanel.scrollTop = rightPanelScrollTop;
 
 				// 重新加载模型列表
 				if(openaiApiModify){
