@@ -338,7 +338,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	opacity: 0.5;
-	margin-bottom: 0;
 	cursor: pointer;
 }
 
@@ -348,10 +347,14 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	margin: 0;
 	white-space: nowrap;
 }
+.content.collapsed pre {
+	display: block;
+}
 .content.collapsed ul,
 .content.collapsed ol {
     padding-left: 0;
-}.content.collapsed > details.think.__pChat__ {
+}
+.content.collapsed > details.think.__pChat__ {
 	display: none;
 }
 
@@ -361,7 +364,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	backdrop-filter: blur(5px);
 	border-top: 1px solid rgba(255, 255, 255, 0.05);
 	
-	margin: 10px -15px -10px -15px; /* 上边距留出一点空间，下/左/右抵消 padding */
+	margin: 7px -15px -10px -15px; /* 上边距留出一点空间，下/左/右抵消 padding */
 	padding: 6px 15px;             /* 重新补回内边距 */
 
 	display: flex;
@@ -409,7 +412,8 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .image-preview-container, .preview-content {
 	max-width: 800px;
 	width: 100%;
-	margin: 0 auto 0 auto;
+	margin-left: auto;
+	margin-right: auto;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
@@ -433,8 +437,10 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 
 .preview-item img {
-	height: 24px;
-	width: 24px;
+	min-width: 24px;
+	max-width: 24px;
+	min-height: 24px;
+	max-height: 24px;
 	object-fit: cover;
 	border: 1px solid var(--user-msg-color);
 }

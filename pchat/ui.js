@@ -1369,8 +1369,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 			}
 			// 3. 渲染 Markdown
 			contentDiv.innerHTML = await renderContent(msgItem.content);
-			// contentDiv.innerHTML = DOMPurify.sanitize(await worker.run('renderMarkdown', currentRawText), DOMPurifyConfig);
-			// contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(currentRawText), DOMPurifyConfig);
 			// 4. 禁止编辑 (渲染后的 HTML 不适合直接编辑)
 			contentDiv.contentEditable = 'false';
 			contentDiv.classList.remove('editable');
@@ -1400,10 +1398,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 		// 延迟渲染
 		if (!msgItem.isCollapsed && !msgItem.isRaw && contentDiv.dataset.lazy === 'true') {
-			// 从内存或 dom 中得到消息原始内容
-			const rawText = msgItem ? msgItem.content : contentDiv.textContent;
-			contentDiv.innerHTML = DOMPurify.sanitize(await worker.run('renderMarkdown', rawText), DOMPurifyConfig);
-			// contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(rawText), DOMPurifyConfig);
+			contentDiv.innerHTML = await renderContent(msgItem.content);
 			contentDiv.dataset.lazy = 'false';
 		}
 
