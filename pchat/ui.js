@@ -43,6 +43,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 			node.classList.add('no-edit');
 		}
 	});
+
+	// 所有图片懒加载
+	DOMPurify.addHook('afterSanitizeElements', (node) => {
+		if (node.tagName === 'IMG') {
+			node.setAttribute('loading', 'lazy');
+		}
+		return node;
+	});
 	
 	// --- Worker ---
 	const worker = {
@@ -1178,7 +1186,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			if(item.type === 'image_url'){
 				previewContentArea.innerHTML += `
 					<div id="${item.id}" class="preview-item">
-						<img src="${item.image_url.url}">
+						<img src="${item.image_url.url}" loading="lazy">
 						<span class="file-info">${item.name}</span>
 						<span class="remove-img" onclick="removeAttachedImage('${item.id}', '${id}')">&times;</span>
 					</div>
@@ -1261,7 +1269,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 		if(force) isAutoScroll = true;
 		if(!isAutoScroll) return;
 		rightPanel.scrollTop = rightPanel.scrollHeight;
-		// 用于解决 content-visibility: auto; 导致滚动失效的问题
 		if(delay){
 			setTimeout(() => {
 				rightPanel.scrollTop = rightPanel.scrollHeight;
@@ -1277,13 +1284,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 				<span class="file-info">${meta.name}</span>
 				<span class="remove-img" onclick="removeAttachedImage('${meta.id}', 'userInput')">&times;</span>
 			`;
+			attachedImageElement.loading = 'lazy';
 			div.insertBefore(attachedImageElement, div.firstChild);
 			imagePreviewContainer.appendChild(div);
 			return;
 		}
 		imagePreviewContainer.innerHTML = attachedImages.map((img) => `
 			<div class="preview-item">
-				<img src="${img.image_url.url}">
+				<img src="${img.image_url.url}" loading="lazy">
 				<span class="file-info">${img.name}</span>
 				<span class="remove-img" onclick="removeAttachedImage('${img.id}', 'userInput')">&times;</span>
 			</div>
@@ -1575,9 +1583,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 	userInput.addEventListener('paste', async (e) => {
 		const items = Array.from(e.clipboardData?.items || e.originalEvent.clipboardData?.items);
 		// 立即请求文件, 防止被清空
-		const files = items.map(i => i.getAsFile());
+		const files = items
+						.filter(i => i.type.startsWith('image'))
+						.map(i => i.getAsFile());
 		for(const file of files){
-			if(!file.type.startsWith('image')) continue;
 			await new Promise((resolve) => {
 				const reader = new FileReader();
 				reader.onload = async (event) => {

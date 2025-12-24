@@ -406,10 +406,16 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 /* 粘贴图片的预览容器 */
 .image-preview-container, .preview-content {
 	max-width: 800px;
+	width: 100%;
 	margin: 0 auto 0 auto;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
+}
+
+.image-preview-container:has(.preview-item),
+.preview-content:has(.preview-item) {
+	margin-bottom: 10px;
 }
 
 /* 预览条目：半透明绿 + 虚线边框 */
@@ -418,8 +424,8 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	align-items: center;
 	background: rgba(0, 255, 0, 0.05);
 	border: 1px dashed var(--user-msg-color);
+	width: calc(20% - 0.8 * 10px);
 	padding: 5px;
-	margin-bottom: 10px;
 	gap: 4px;
 	animation: fadeIn 0.2s ease;
 }
@@ -435,8 +441,8 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	font-family: var(--font-stack);
 	font-size: 10px;
 	padding-left: 5px;
+	width: 100%;
 	color: var(--user-msg-color);
-	max-width: 90px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -897,20 +903,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	-webkit-text-security: none;
 }
 
-
-@media (max-width: 970px) {
-	#minimap {
-		right: -100px;
-	}
-	#sidebar-toggle:checked ~ #chat-container #minimap {
-		right: 7px;
-	}
-
-	#input-container {
-		padding: 20px;
-	}
-}
-
 @media (max-width: 1200px) {
 	.menu-btn {
 		display: block;
@@ -936,6 +928,44 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	header h1 { display: none; }
 
 	#model-select { width: 100%; }
+}
+
+@media (max-width: 970px) {
+	#minimap {
+		right: -100px;
+	}
+	#sidebar-toggle:checked ~ #chat-container #minimap {
+		right: 7px;
+	}
+
+	#input-container {
+		padding: 20px;
+	}
+}
+
+@media (max-width: 730px) {
+	/* 当 .preview-item 宽度 >= 默认宽度的 * 0.85 (123.25) 时压缩  */
+	.preview-item {
+		width: calc(25% - 0.75 * 10px);
+	}
+}
+
+@media (max-width: 600px) {
+	.preview-item {
+		width: calc(33.33333% - 0.6666666 * 10px);
+	}
+}
+
+@media (max-width: 465px) {
+	.preview-item {
+		width: calc(50% - 0.5 * 10px);
+	}
+}
+
+@media (max-width: 334px) {
+	.preview-item {
+		width: 100%;
+	}
 }
 
 @media (min-width: 1200px) {
