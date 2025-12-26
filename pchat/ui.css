@@ -911,6 +911,37 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	-webkit-text-security: none;
 }
 
+#image {
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 2000;
+	line-height: 0;
+	background-color: #00000000;
+	opacity: 0;
+	pointer-events: none;
+	transition: all 0.2s ease;
+}
+#image > img {
+	max-width: 80%;
+	height: fit-content;
+	position: absolute;
+	-webkit-user-drag: none;
+	transition: transform 0.4s ease, top 0.4s ease, left 0.4s ease;
+	transform: scale(1);
+	opacity: 0;
+}
+#image.open {
+	pointer-events: all;
+	opacity: 1 !important;
+	background-color: #00000078;
+}
+#image.open > img {
+	opacity: 1;
+}
+
 @media (max-width: 1200px) {
 	.menu-btn {
 		display: block;

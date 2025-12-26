@@ -1198,7 +1198,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			if(item.type === 'image_url'){
 				previewContentArea.innerHTML += `
 					<div id="${item.id}" class="preview-item">
-						<img src="${item.image_url.url}" loading="lazy">
+						<img src="${item.image_url.url}" loading="lazy" onclick="openImage(this)">
 						<span class="file-info">${item.name}</span>
 						<span class="remove-img" onclick="removeAttachedImage('${item.id}', '${id}')">&times;</span>
 					</div>
@@ -1547,7 +1547,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 				document.getElementById(imgId).remove();
 			}
 		}
-	};
+	}
+
+	window.openImage = async (_this) => {
+		const imgBox = document.querySelector('#image');
+		const img = imgBox.querySelector('& > img');
+		img.src = '';
+		img.src = _this.src;
+	}
 
 	// 监听模型改变，保存用户偏好
 	modelSelect.addEventListener('change', () => {
@@ -1923,6 +1930,122 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			// 删除数据库 puter_cache (不考虑锁)
 			indexedDB.deleteDatabase('puter_cache');
 			setTimeout(location.reload, 100);
+		});
+	}
+
+	if(true){
+		const imgBox = document.querySelector('#image');
+		const img = imgBox.querySelector('& > img');
+		img.addEventListener('load', () => {
+			
+			// 图片居中
+			const x = (window.innerWidth - img.offsetWidth) / 2;
+			const y = (window.innerHeight - img.offsetHeight) / 2;
+			img.style.left = `${x}px`;
+			img.style.top = `${y}px`;
+			// 通过 transform: scale(1) 将图片初始大小限定在屏幕宽度 80%
+			img.style.transform = `scale(0.9)`;
+			imgBox.classList.add('open');
+		});
+
+		// imgBox.addEventListener('click', () => {
+		// 	imgBox.classList.toggle('open');
+		// });
+
+		document.body.addEventListener('mousedown', (event) => {
+
+			// 要求左键点击
+			if(event.button !== 0) return;
+
+			let moveX = event.clientX;
+			let moveY = event.clientY;
+
+			const onMouseUp = () => {
+				if(moveX === event.clientX && moveY === event.clientY){
+					imgBox.classList.remove('open');
+				}
+				document.removeEventListener('mouseup', onMouseUp);
+				document.removeEventListener('mouseup', onMouseMove);
+			};
+
+			const onMouseMove = (event) => {
+				moveX = event.clientX;
+				moveY = event.clientY;
+			};
+
+			document.addEventListener('mouseup', onMouseUp);
+			document.addEventListener('mousemove', onMouseMove);
+		});
+
+		const onResize = () => {
+			const x = (window.innerWidth - img.offsetWidth) / 2;
+			const y = (window.innerHeight - img.offsetHeight) / 2;
+
+			img.style.left = `${x}px`;
+			img.style.top = `${y}px`;
+		};
+
+		window.addEventListener('resize', onResize);
+		img.addEventListener('load', () => {
+			onResize();
+			img.style.opacity = 1;
+		});
+
+		// 如果元素 (即将) 超出视口, 则重置位置
+		const runAway = async () => {
+			const rect = img.getBoundingClientRect();
+			const stat = rect.left > (window.innerWidth - window.innerWidth * 0.07) || rect.right < window.innerWidth * 0.07 || rect.top > (window.innerHeight - window.innerHeight * 0.07) || rect.bottom < window.innerHeight * 0.07;
+			if(stat){
+				onResize();
+			}
+		};
+
+		let scale = 1;
+		document.body.onwheel = (event) => {
+
+			// (Abs(滚轮步进距离 / 1000), 限制不小于 0.01, 不大于 0.2. 乘 Abs(当前缩放比例)), 不小于 0.01
+			const step = Math.max(Math.min(Math.max(Math.abs(event.deltaY / 1000), 0.01), 0.2) * Math.abs(scale), 0.01);
+
+			if(step === 0.01){
+				// 可能是通过触摸板进行缩放, 调低过度动画时间
+				img.style.transition = `transform 0.25s ease, top 0.4s ease, left 0.4s ease`;
+			}else{
+				img.style.transition = `transform 0.4s ease, top 0.4s ease, left 0.4s ease`;
+			}
+
+			scale += (event.deltaY < 0)? step : -step;
+
+			// 小数位数太多造成抖动
+			img.style.transform = `scale(${scale.toFixed(4)})`;
+
+			runAway();
+		};
+
+		img.addEventListener('mousedown', (event) => {
+			const startMouseX = event.clientX;
+			const startMouseY = event.clientY;
+			const startX = img.offsetLeft;
+			const startY = img.offsetTop;
+
+			const onMouseMove = (event) => {
+
+				img.style.transition = `transform 0.4s ease`;
+
+				const dx = event.clientX - startMouseX;
+				const dy = event.clientY - startMouseY;
+				img.style.left = `${startX + dx}px`;
+				img.style.top = `${startY + dy}px`;
+			};
+
+			const onMouseUp = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+
+				runAway();
+			};
+
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
 		});
 	}
 
