@@ -1981,6 +1981,8 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			const x = (window.innerWidth - img.offsetWidth) / 2;
 			const y = (window.innerHeight - img.offsetHeight) / 2;
 
+			img.style.transition = `transform 0.4s ease, top 0.4s ease, left 0.4s ease`;
+
 			img.style.left = `${x}px`;
 			img.style.top = `${y}px`;
 		};

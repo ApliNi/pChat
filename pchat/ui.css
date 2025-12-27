@@ -920,6 +920,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	z-index: 2000;
 	line-height: 0;
 	background-color: #00000000;
+	user-select: none;
 	opacity: 0;
 	pointer-events: none;
 	transition: all 0.2s ease;
