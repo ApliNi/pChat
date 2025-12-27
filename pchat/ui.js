@@ -1934,27 +1934,30 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		});
 	}
 
+	// 图片查看器
 	if(true){
 		const imgBox = document.querySelector('#image');
 		const img = imgBox.querySelector('& > img');
-		img.addEventListener('load', () => {
-			
-			// 图片居中
+
+		const onResize = () => {
 			const x = (window.innerWidth - img.offsetWidth) / 2;
 			const y = (window.innerHeight - img.offsetHeight) / 2;
+
+			img.style.transition = `transform 0.4s ease, top 0.4s ease, left 0.4s ease`;
+
 			img.style.left = `${x}px`;
 			img.style.top = `${y}px`;
-			// 通过 transform: scale(1) 将图片初始大小限定在屏幕宽度 80%
+		};
+
+		img.addEventListener('load', () => {
+			// 图片居中
+			onResize();
+			// 初始大小稍小于屏幕最大尺寸
 			img.style.transform = `scale(0.9)`;
 			imgBox.classList.add('open');
 		});
 
-		// imgBox.addEventListener('click', () => {
-		// 	imgBox.classList.toggle('open');
-		// });
-
 		document.body.addEventListener('mousedown', (event) => {
-
 			// 要求左键点击
 			if(event.button !== 0) return;
 
@@ -1978,16 +1981,6 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			document.addEventListener('mousemove', onMouseMove);
 		});
 
-		const onResize = () => {
-			const x = (window.innerWidth - img.offsetWidth) / 2;
-			const y = (window.innerHeight - img.offsetHeight) / 2;
-
-			img.style.transition = `transform 0.4s ease, top 0.4s ease, left 0.4s ease`;
-
-			img.style.left = `${x}px`;
-			img.style.top = `${y}px`;
-		};
-
 		window.addEventListener('resize', onResize);
 		img.addEventListener('load', () => {
 			onResize();
@@ -1997,7 +1990,10 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		// 如果元素 (即将) 超出视口, 则重置位置
 		const runAway = async () => {
 			const rect = img.getBoundingClientRect();
-			const stat = rect.left > (window.innerWidth - window.innerWidth * 0.07) || rect.right < window.innerWidth * 0.07 || rect.top > (window.innerHeight - window.innerHeight * 0.07) || rect.bottom < window.innerHeight * 0.07;
+			const stat =	rect.left > (window.innerWidth - window.innerWidth * 0.07) ||
+							rect.right < window.innerWidth * 0.07 ||
+							rect.top > (window.innerHeight - window.innerHeight * 0.07) ||
+							rect.bottom < window.innerHeight * 0.07;
 			if(stat){
 				onResize();
 			}
