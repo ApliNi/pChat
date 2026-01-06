@@ -254,8 +254,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 		openaiApiKey: [],
 		openaiPriorityModels: [],
 
-		modelServiceList: [],
-
 		...await IDBManager.getConfig(),
 		setItem: (id, value) => {
 			cfg[id] = value;
@@ -758,7 +756,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 			// 不输入内容也滚动到底部
 			setTimeout(() => {
 				rightPanel.scrollTo({ top: rightPanel.scrollHeight, behavior: 'smooth' });
-			}, 10);
+			}, 40);
 		}
 	}
 
@@ -1716,8 +1714,6 @@ You are a helpful coding assistant. Answer concisely.</pre>
 	</p>
 	<p>支持添加多个 API 密钥, 轮询调用</p>
 </details>
-
-<div id="modelServiceList"></div>
 `;
 
 		const configBtn = document.getElementById('config-btn');
@@ -1731,8 +1727,6 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		const openaiApiKeyInput = document.getElementById('openaiApiKeyInput');
 		const openaiApiKeyCount = document.getElementById('openaiApiKeyCount');
 		const openaiPriorityModelsInput = document.getElementById('openaiPriorityModelsInput');
-
-		const modelServiceListDom = document.getElementById('modelServiceList');
 
 		let openaiApiModify = false;
 
