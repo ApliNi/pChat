@@ -13,8 +13,8 @@ if ('serviceWorker' in navigator) {
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.3.1/+esm';
 import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
 
-window.addEventListener('DOMContentLoaded', async () => {
-
+if(true){
+	
 	const DOMPurifyConfig = {
 		IN_PLACE: true,
 		// RETURN_DOM_FRAGMENT: true,
@@ -2105,5 +2105,4 @@ You are a helpful coding assistant. Answer concisely.</pre>
 	setTimeout(async () => {
 		await IDBManager.delConfig('puter_priorityModels');
 	}, 2000);
-
-});
+}
