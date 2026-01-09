@@ -1,6 +1,6 @@
 # [ pChat - AI Chat Terminal ]
 
-这是一个轻量级本地化 AI 聊天终端, 在浏览器上可用: https://pchat.ipacel.cc/
+这是一个本地化的轻量 AI 对话工具, 在浏览器上可用: https://pchat.ipacel.cc/
 
 <img width="1318" height="838" alt="image" src="https://github.com/user-attachments/assets/b312a52d-171b-446f-8166-6f344e87f077" />
 
