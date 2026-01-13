@@ -538,7 +538,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	position: absolute;
 	top: 6px;
 	right: 96px;
-	background: transparent;
+	background: #000000cc;
 	color: #fff;
 	opacity: 0.6;
 	border: none;
@@ -568,7 +568,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	flex-shrink: 0;
 	overflow-y: auto;
 	padding: 10px 8px;
-	gap: 6px;
+	/* gap: 6px; */
 	position: absolute;
 	right: 7px;
 	top: 0;
@@ -584,32 +584,42 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 .minimap-item {
 	width: 100%;
-	height: 20px;
-	background: rgba(255, 255, 255, 0.03);
-	border-left: 3px solid transparent;
+	padding-bottom: 5px;
 	cursor: pointer;
 	transition: all 0.2s;
 	position: relative;
 	pointer-events: all;
-	animation: fadeIn 0.3s ease;
 	text-decoration: none;
 }
-.minimap-item:target-current {
-	border-left: 10px solid transparent;
+.minimap-item::after {
+	content: "";
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	color: var(--meta-color);
+	height: 12px;
+	background: rgba(255, 255, 255, 0.03);
+	border-left: 3px solid transparent;
+	transition: all 0.2s;
+	animation: fadeIn 0.3s ease;
+}
+.minimap-item:target-current::after {
+	border-left: 11px solid transparent;
 }
 
-.minimap-item:hover {
+.minimap-item:hover::after {
 	filter: brightness(130%);
 }
 
-.minimap-item.collapsed {
+.minimap-item.collapsed::after {
+	content: "-";
 	opacity: 0.35 !important;
 }
 
 /* 颜色映射，与主界面一致 */
-.minimap-item.user { border-left-color: var(--user-msg-color); background: rgba(0, 255, 0, 0.05); }
-.minimap-item.assistant { border-left-color: var(--ai-msg-color); background: rgba(255, 255, 255, 0.05); }
-.minimap-item.system { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.05); }
+.minimap-item.user::after { border-left-color: var(--user-msg-color); background: rgba(0, 255, 0, 0.05); }
+.minimap-item.assistant::after { border-left-color: var(--ai-msg-color); background: rgba(255, 255, 255, 0.05); }
+.minimap-item.system::after { border-left-color: var(--sys-msg-color); background: rgba(0, 204, 255, 0.05); }
 
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: #000; }
