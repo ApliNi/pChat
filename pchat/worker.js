@@ -56,14 +56,22 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 		else if(type === 'renderSidebar') {
 			const { sessions, lastSessionId } = data;
 
-			const sortedSessions = sessions.sort((a, b) => b.timestamp - a.timestamp);
+			// 首先按置顶状态排序，然后按时间戳排序
+			const sortedSessions = sessions.sort((a, b) => {
+				// 置顶的会话排在前面
+				if (a.pinned && !b.pinned) return -1;
+				if (!a.pinned && b.pinned) return 1;
+				// 如果都置顶或都不置顶，则按时间戳排序
+				return b.timestamp - a.timestamp;
+			});
 			const newHtml = sortedSessions.map(session => `
-				<div class="history-item ${session.id === lastSessionId ? 'active' : ''}" data-session-id="${session.id}">
+				<div class="history-item ${session.id === lastSessionId ? 'active' : ''}" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
 					<div class="history-info">
 						<div class="history-title" title="Double click to rename">${session.title || 'New Session'}</div>
 						<div class="history-date">${formatDate(session.timestamp)}</div>
 					</div>
-					<button class="history-del-btn">&times;</button>
+					<button class="history-btn history-pin-btn ${session.pinned ? 'pinned' : ''}" title="Pin/Unpin this session"></button>
+					<button class="history-btn history-del-btn"></button>
 				</div>
 			`);
 			send(newHtml.join(''));

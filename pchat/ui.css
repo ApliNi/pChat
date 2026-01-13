@@ -193,7 +193,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 
 .history-item {
-	padding: 10px 15px;
+	padding: 10px 10px 10px 15px;
 	cursor: pointer;
 	border-left: 2px solid transparent;
 	display: flex;
@@ -228,13 +228,29 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 .history-date { font-size: 10px; color: #444; font-family: sans-serif; }
 
-.history-del-btn {
-	background: transparent; border: none; color: #444;
-	cursor: pointer; font-size: 14px; padding: 5px; margin-left: 5px;
-	opacity: 0; transition: all 0.2s;
+.history-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	color: #444;
+	cursor: pointer;
+	width: 25px;
+	height: 25px;
+	font-size: 14px;
+	line-height: 0;
+	padding: 5px;
+	opacity: 0;
+	transition: all 0.2s;
 }
-.history-item.active .history-del-btn, .history-item:hover .history-del-btn { opacity: 1; }
+.history-item.active .history-btn { opacity: 0.7; }
+.history-item:hover .history-btn { opacity: 1; }
+.history-del-btn::after { content: "×"; font-size: 16px; }
 .history-del-btn:hover { color: var(--danger-color); }
+.history-pin-btn::after { content: "⇵"; font-size: 12px; font-weight: bolder; }
+.history-pin-btn.pinned { opacity: 1 !important; color: var(--meta-color); }
+.history-pin-btn:hover { color: var(--sys-msg-color); }
 
 /* --- Right Panel --- */
 #right-panel {

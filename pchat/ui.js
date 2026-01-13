@@ -81,7 +81,7 @@ if(true){
 	// --- IndexedDB Manager ---
 	const IDBManager = {
 		dbName: 'pChat.IpacEL.cc',
-		version: 2,
+		version: 3,
 		db: null,
 
 		init() {
@@ -141,6 +141,22 @@ if(true){
 				tx.objectStore('chats').delete(sessionId);
 				tx.oncomplete = () => resolve();
 				tx.onerror = () => reject(tx.error);
+			});
+		},
+
+		getSession(sessionId) {
+			return new Promise((resolve, reject) => {
+				const tx = this.db.transaction('sessions', 'readonly');
+				const store = tx.objectStore('sessions');
+				const request = store.get(sessionId);
+				request.onsuccess = () => {
+					const session = request.result;
+					if (session && (session.pinned === undefined || session.pinned === null)) {
+						session.pinned = false;
+					}
+					resolve(session);
+				};
+				request.onerror = () => reject(request.error);
 			});
 		},
 
@@ -351,6 +367,20 @@ if(true){
 		if(_renderSidebar) renderSidebar();
 	}
 
+	async function toggleSessionPin(e, sessionId) {
+		e.stopPropagation();
+		const session = sessions.find(s => s.id === sessionId);
+		if (session) {
+			session.pinned = !(session.pinned === true);
+			session.timestamp = Date.now(); // 更新时间戳以改变排序
+			await IDBManager.saveSessionMeta(session);
+			renderSidebar();
+			
+			// 置顶后切换到该会话
+			await switchSession(sessionId);
+		}
+	}
+
 	async function saveCurrentSession() {
 		if (!cfg.lastSessionId) return;
 		await IDBManager.saveSessionMessages(cfg.lastSessionId, chatHistory);
@@ -447,13 +477,19 @@ if(true){
 
 		let pressTimer; // 用于长按计时的全局变量
 
-		// --- 1. 点击事件委托 (切换 & 删除) ---
+		// --- 1. 点击事件委托 (切换 & 删除 & 置顶) ---
 		historyList.addEventListener('click', (e) => {
 			// 查找点击的是哪个会话项
 			const item = e.target.closest('.history-item');
 			if (!item) return;
 
 			const sessionId = item.dataset.sessionId;
+
+			// 如果点击的是置顶按钮
+			if (e.target.classList.contains('history-pin-btn')) {
+				toggleSessionPin(e, sessionId);
+				return;
+			}
 
 			// 如果点击的是删除按钮
 			if (e.target.classList.contains('history-del-btn')) {
@@ -580,6 +616,7 @@ if(true){
 			id: 'sess_welcome', // 固定 ID
 			title: 'Welcome 👋',
 			timestamp: 0,
+			pinned: false,
 		};
 
 		const text = `
@@ -689,6 +726,7 @@ if(true){
 			id: newId,
 			title: '',
 			timestamp: Date.now(),
+			pinned: false,
 		};
 
 		cfg.setItem('lastSessionId', newId);
