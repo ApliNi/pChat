@@ -754,9 +754,7 @@ if(true){
 
 		}finally{
 			// 不输入内容也滚动到底部
-			setTimeout(() => {
-				rightPanel.scrollTo({ top: rightPanel.scrollHeight, behavior: 'smooth' });
-			}, 40);
+			scrollToBottomClickMinimap();
 		}
 	}
 
@@ -1273,6 +1271,16 @@ if(true){
 				rightPanel.scrollTop = rightPanel.scrollHeight;
 			}, 1);
 		}
+	}
+
+	function scrollToBottomClickMinimap(delay = 0) {
+		if(delay > 0){
+			setTimeout(() => {
+				scrollToBottomClickMinimap(0);
+			}, 1);
+			return;
+		}
+		minimap.lastElementChild.click();
 	}
 
 	function renderImagePreviews(attachedImageElement = null, meta = null) {
