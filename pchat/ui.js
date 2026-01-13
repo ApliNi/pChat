@@ -278,6 +278,7 @@ if(true){
 	};
 
 	// --- DOM Elements ---
+	const sidebar = document.getElementById('sidebar');
 	const sidebarToggle = document.getElementById('sidebar-toggle');
 	const rightPanel = document.getElementById('right-panel');
 	const messageArea = document.getElementById('message-area');
@@ -1879,6 +1880,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		configBtn.addEventListener('click', async () => {
 			configBtn.classList.toggle('open');
 			if(configBtn.classList.contains('open')){
+				sidebar.classList.add('open-config');
 				rightPanelScrollTop = rightPanel.scrollTop;
 
 				// 重新填充默认提示词
@@ -1892,6 +1894,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 				historyList.style.pointerEvents = 'none';
 				rightPanel.querySelector('& > .config').style.display = '';
 			}else{
+				sidebar.classList.remove('open-config');
 				for(const e of rightPanel.querySelectorAll('& > *')){
 					e.style.display = '';
 				}

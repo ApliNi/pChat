@@ -955,6 +955,15 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	-webkit-text-security: none;
 }
 
+#sidebar .sidebar-header,
+#sidebar #history-list {
+	transition: opacity 0.2s;
+}
+#sidebar.open-config .sidebar-header,
+#sidebar.open-config #history-list {
+	opacity: 0.6;
+}
+
 #image {
 	position: fixed;
 	top: 0;
