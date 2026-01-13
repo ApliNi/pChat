@@ -592,7 +592,7 @@ if(true){
 
 		// 欢迎会话不滚动到底部
 		if(id !== 'sess_welcome'){
-			scrollToBottom(true, true);
+			scrollToBottom(true);
 		}
 		
 		renderSidebar(true);
@@ -793,7 +793,7 @@ if(true){
 
 		}finally{
 			// 不输入内容也滚动到底部
-			scrollToBottomClickMinimap();
+			scrollToBottom(true);
 		}
 	}
 
@@ -1337,25 +1337,14 @@ if(true){
 		}
 	}
 
-	function scrollToBottom(force = false, delay = false) {
+	function scrollToBottom(force = false, delay = 0) {
 		if(force) isAutoScroll = true;
 		if(!isAutoScroll) return;
-		rightPanel.scrollTop = rightPanel.scrollHeight;
-		if(delay){
-			setTimeout(() => {
-				rightPanel.scrollTop = rightPanel.scrollHeight;
-			}, 1);
-		}
-	}
-
-	function scrollToBottomClickMinimap(delay = 0) {
 		if(delay > 0){
-			setTimeout(() => {
-				scrollToBottomClickMinimap(0);
-			}, 1);
+			setTimeout(() => { scrollToBottom(force); }, 1);
 			return;
 		}
-		minimap.lastElementChild.click();
+		rightPanel.scrollTop = rightPanel.scrollHeight + 9999;
 	}
 
 	function renderImagePreviews(attachedImageElement = null, meta = null) {
