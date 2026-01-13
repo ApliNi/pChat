@@ -1569,12 +1569,6 @@ if(true){
 		sidebarToggle.checked = false;
 	});
 
-	// --- Chat Logic ---
-	userInput.addEventListener('input', function() {
-		this.style.height = (this.scrollHeight) + 'px';
-		if(this.value === '') this.style.height = '0px';
-	});
-
 	userInput.addEventListener('keydown', (e) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();

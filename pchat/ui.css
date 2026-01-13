@@ -488,10 +488,17 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 
 #user-input {
-	flex: 1; background: #000; color: var(--text-color);
-	border: none; padding: 12px; font-family: var(--font-stack);
+	flex: 1;
+	background: #000;
+	color: var(--text-color);
+	border: none;
+	padding: 12px;
+	font-family: var(--font-stack);
 	font-size: 0.86rem; /* 比 0.875rem 小一点, 防止移动端显示滚动条 */
-	resize: none; height: 42px; min-height: 42px; max-height: 200px;
+	resize: none;
+	field-sizing: content;
+	min-height: 42px;
+	max-height: 200px;
 	outline: none;
 }
 
