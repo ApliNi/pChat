@@ -297,6 +297,7 @@ if(true){
 	let chatHistory = [];
 	let attachedImages = []; // 存储当前待发送的图片 [{id, base64, name}]
 	let isProcessing = false;
+	let abortController = null;
 	let sessions = [];
 	let isAutoScroll = true;
 	let interacted = false;
@@ -903,13 +904,18 @@ if(true){
 		},
 
 		// 统一的流式输出 Generator
-		async *chat(messages, model) {
+		async *chat(messages, model, signal = null) {
 			if (cfg.modelService === 'Puter.js') {
 
 				if (!window.puter) await AIService.loadPuter();
 
+				// 注意：Puter.js 可能不直接支持中止信号，但我们仍然可以尽早退出循环
 				const response = await window.puter.ai.chat(messages, { model, stream: true });
 				for await (const part of response) {
+					// 检查是否被中止
+					if (signal && signal.aborted) {
+						break;
+					}
 					yield {
 						text: part.text || '',
 						reasoning: part.reasoning || '',
@@ -918,6 +924,7 @@ if(true){
 			}
 			else if (cfg.modelService === 'OpenAI-API') {
 				// OpenAI 模式
+
 				const response = await fetch(`${cfg.openaiApiEndpoint.replace(/\/+$/, '')}/chat/completions`, {
 					method: 'POST',
 					headers: {
@@ -929,6 +936,7 @@ if(true){
 						messages: messages,
 						stream: true,
 					}),
+					signal: abortController.signal,
 				});
 
 				if (!response.ok) {
@@ -941,6 +949,12 @@ if(true){
 				let buffer = '';
 
 				while (true) {
+					// 检查是否被中止
+					if (signal && signal.aborted) {
+						reader.cancel();
+						break;
+					}
+					
 					const { done, value } = await reader.read();
 					if (done) break;
 
@@ -949,6 +963,12 @@ if(true){
 					buffer = lines.pop(); // 保持残余数据在缓冲区
 
 					for (const line of lines) {
+						// 检查是否被中止
+						if (signal && signal.aborted) {
+							reader.cancel();
+							break;
+						}
+						
 						const message = line.replace(/^data: /, '');
 						if (!message || message === '[DONE]') continue;
 
@@ -969,14 +989,20 @@ if(true){
 		async performAIRequest(msgId = null) {
 			if (isProcessing) return;
 			
+			// 创建一个新的AbortController用于中断请求
+			abortController = new AbortController();
+			
 			const currentModel = modelSelect.value;
 			toggleState(true);
 
 			let msgIdx, msgDiv, contentHistory, uiElements, thisContent;
 
-			if (msgId) {
+			if (msgId && document.getElementById(msgId)) {
 				msgIdx = chatHistory.findIndex(m => m.id === msgId);
-				if (msgIdx === -1) { toggleState(false); return; }
+				if (msgIdx === -1) {
+					toggleState(false);
+					return;
+				}
 				contentHistory = chatHistory.slice(0, msgIdx);
 				thisContent = chatHistory[msgIdx];
 				
@@ -1035,21 +1061,23 @@ if(true){
 					return { role: role, content: _content };
 				});
 
-				const responseStream = AIService.chat(apiHistory, currentModel);
+				const responseStream = AIService.chat(apiHistory, currentModel, abortController.signal);
 
 				// 2. 循环处理流数据
 				let isRendering = 0;
-				let think = false;
+				let think = 0;
 				let textItem = { type: 'text', text: '', reasoning: '' };
 				for await (const part of responseStream) {
+					// 检查是否被中止
+					if (abortController.signal.aborted) {
+						break;
+					}
 					
 					if(part.reasoning){
-						think = true;
 						textItem.reasoning += part.reasoning;
 					}
 
 					if(part.text){
-						think = false;
 						textItem.text += part.text;
 					}
 
@@ -1057,6 +1085,11 @@ if(true){
 					if(isRendering > 1) continue;
 					while(isRendering === 1) await new Promise((resolve) => setTimeout(resolve, 20));
 					isRendering += 1;
+
+					// 等待浏览器刷新一帧
+					requestAnimationFrame(() => {
+						isRendering -= 1;
+					});
 
 					// 渲染新内容
 					const htmlContent = await renderContent([ textItem ]);
@@ -1080,24 +1113,18 @@ if(true){
 						},
 					});
 
+					// 处理思考框折叠
 					const thinkEl = uiElements.contentDiv.querySelector('.think.__pChat__');
-
-					if (think && thinkEl) {
-						thinkEl.open = true;
+					if(thinkEl){
+						if(part.reasoning && think === 0){
+							think = 1;
+							thinkEl.open = true;
+						}
+						if(part.text && think === 1){
+							think = 2;
+							setTimeout(() => { thinkEl.open = false; }, 200);
+						}
 					}
-
-					// 思考完毕后折叠思考内容
-					if (!think && thinkEl) {
-						think = 0;
-						setTimeout(() => {
-							thinkEl.open = false;
-						}, 200);
-					}
-
-					// 等待浏览器刷新一帧
-					requestAnimationFrame(() => {
-						isRendering -= 1;
-					});
 					
 					scrollToBottom();
 				}
@@ -1125,17 +1152,28 @@ if(true){
 
 			} catch (err) {
 				clearInterval(timerInterval);
-				console.error(err);
-				uiElements.contentDiv.innerHTML += `<br />`;
-				uiElements.contentDiv.textContent += `[SYSTEM ERROR]: ${err.message}`;
-				uiElements.metaDiv.innerText = `FAIL`;
-				uiElements.metaDiv.style.color = '#ff3333';
+				// 如果是由于中断导致的错误，静默处理
+				if (err.name === 'AbortError' || err.message.includes('aborted')) {
+					uiElements.metaDiv.innerText = `STOPPED`;
+					uiElements.metaDiv.style.color = '#ffcc33';
+				} else {
+					console.error(err);
+					uiElements.contentDiv.innerHTML += `<br />`;
+					uiElements.contentDiv.textContent += `[SYSTEM ERROR]: ${err.message}`;
+					uiElements.metaDiv.innerText = `FAIL`;
+					uiElements.metaDiv.style.color = '#ff3333';
+				}
 			} finally {
 				msgDiv.classList.remove('isProcessing');
 				toggleState(false);
 				if (!msgId) scrollToBottom();
 			}
 		},
+		
+		// 停止AI输出
+		stopAIOutput: () => {
+			abortController?.abort();
+		}
 	};
 
 	async function renderContent(content, renderHTML = true) {
@@ -1288,12 +1326,11 @@ if(true){
 
 	function toggleState(loading) {
 		isProcessing = loading;
-		sendBtn.disabled = loading;
 		document.querySelectorAll('.destroy-btn').forEach(b => b.disabled = loading);
 
 		if (loading) {
 			statusDot.classList.add('active');
-			sendBtn.innerText = 'BUSY';
+			sendBtn.innerText = 'STOP';
 		} else {
 			statusDot.classList.remove('active');
 			sendBtn.innerText = 'SEND';
@@ -1659,7 +1696,14 @@ if(true){
 		}
 	});
 
-	sendBtn.addEventListener('click', () => handleSend());
+	sendBtn.addEventListener('click', () => {
+		// 如果正在处理（AI输出中），则停止AI输出
+		if (isProcessing) {
+			AIService.stopAIOutput();
+		} else {
+			handleSend();
+		}
+	});
 
 	// 画中画窗口
 	pipWindowBtn.addEventListener('click', async () => {

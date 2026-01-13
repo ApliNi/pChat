@@ -474,10 +474,15 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 
 .preview-item .remove-img {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	cursor: pointer;
 	color: var(--meta-color);
+	line-height: 0;
 	font-weight: bold;
-	padding: 3px 4px;
+	height: 100%;
+	padding: 5px;
 	transition: all 0.2s;
 }
 .preview-item .remove-img:hover {
