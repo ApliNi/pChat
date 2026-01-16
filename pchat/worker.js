@@ -111,9 +111,9 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 			const sortedYearMonths = Object.keys(groupedSessions).sort((a, b) => b.localeCompare(a)); // 按时间倒序排列年月
 			sortedYearMonths.forEach(yearMonth => {
 				const groupSessions = groupedSessions[yearMonth];
-				const year = `${yearMonth.split('-')[0]}`;
-				const month = `${yearMonth.split('-')[1]}`.padStart(2, '0');
-				html += `<details class="history-group" open><summary class="history-group-title">${year}-${month}</summary>`;
+				let time = `${yearMonth.split('-')[0]}-` + `${yearMonth.split('-')[1]}`.padStart(2, '0');
+				if(time === '1970-01') time = 'SYSTEM';
+				html += `<details class="history-group" open><summary class="history-group-title">${time}</summary>`;
 				groupSessions.forEach(session => {
 					html += `
 						<div class="history-item ${session.id === lastSessionId ? 'active' : ''}" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
