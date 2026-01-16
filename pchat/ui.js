@@ -777,7 +777,7 @@ if(true){
 			await updateSessionTitleIfNeeded(text || '[Image]');
 
 			const userMsgId = generateId();
-			const userMsg = { role: 'user', content: msgContent, id: userMsgId };
+			const userMsg = { role: 'user', content: msgContent, id: userMsgId, isRaw: true };
 			chatHistory.push(userMsg);
 			await appendMessageToDOM(userMsg);
 
@@ -1285,7 +1285,12 @@ if(true){
 		}
 
 		// 正常渲染或显示摘要
-		contentArea.innerHTML += await renderContent(contentArray, (isRendered && !isCollapsed));
+		const renderedContent = await renderContent(contentArray, isRendered);
+		if(isRaw){
+			contentArea.textContent += renderedContent;
+		}else{
+			contentArea.innerHTML += renderedContent;
+		}
 
 		if (stats) {
 			msgDiv.querySelector('.meta-stats').innerText = stats;

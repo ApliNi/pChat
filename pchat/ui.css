@@ -163,6 +163,25 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	content-visibility: auto;
 }
 
+/* 侧边栏会话分组 */
+.history-group {
+	margin-bottom: 10px;
+}
+
+.history-group-title {
+	padding: 5px 10px 5px 15px;
+	font-size: 11px;
+	font-weight: bolder;
+	color: var(--meta-color);
+	margin: 0 8px 10px 8px;
+	background: rgb(255 255 255 / 5%);
+	transition: margin 0.2s;
+}
+
+.history-group:not(:open) > .history-group-title {
+	margin-bottom: 0;
+}
+
 /* [新增] 侧边栏底部样式 */
 .sidebar-footer {
 	padding: 10px;
