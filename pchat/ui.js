@@ -767,7 +767,6 @@ if(true){
 			if (!text || isProcessing) return;
 			
 			userInput.value = '';
-			userInput.style.height = '0px';
 
 			const msgContent = [
 				...attachedImages,
@@ -794,7 +793,8 @@ if(true){
 
 		}finally{
 			// 不输入内容也滚动到底部
-			scrollToBottom(true);
+			// scrollToBottom(true);
+			minimap.lastChild.click();
 		}
 	}
 
