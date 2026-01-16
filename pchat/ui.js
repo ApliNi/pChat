@@ -1477,12 +1477,6 @@ if(true){
 		const msgItem = chatHistory.find(m => m.id === id);
 		msgItem.isCollapsed = contentDiv.classList.contains('collapsed');
 
-		// 延迟渲染
-		if (!msgItem.isCollapsed && !msgItem.isRaw && contentDiv.dataset.lazy === 'true') {
-			contentDiv.innerHTML = await renderContent(msgItem.content);
-			contentDiv.dataset.lazy = 'false';
-		}
-
 		btn.innerText = msgItem.isCollapsed ? '[+]' : '[-]';
 		btn.dataset.isCollapsed = msgItem.isCollapsed;
 
