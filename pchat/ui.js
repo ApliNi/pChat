@@ -793,8 +793,8 @@ if(true){
 
 		}finally{
 			// 不输入内容也滚动到底部
-			// scrollToBottom(true);
-			minimap.lastChild.click();
+			scrollToBottom(true, 70);
+			// minimap.lastChild.click();
 		}
 	}
 
@@ -1347,7 +1347,7 @@ if(true){
 		if(force) isAutoScroll = true;
 		if(!isAutoScroll) return;
 		if(delay > 0){
-			setTimeout(() => { scrollToBottom(force); }, 1);
+			setTimeout(() => { scrollToBottom(force); }, delay);
 			return;
 		}
 		rightPanel.scrollTop = rightPanel.scrollHeight + 9999;
