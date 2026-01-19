@@ -786,6 +786,10 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	border-bottom: none;
 }
 
+.markdown-body a.cmd_user_send {
+	color: var(--user-msg-color);
+}
+
 /* 表格 */
 .markdown-body table {
 	border-collapse: collapse;

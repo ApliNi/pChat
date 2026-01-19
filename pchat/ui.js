@@ -35,9 +35,9 @@ if(true){
 
 		// 交互式发送消息功能
 		if (node.hasAttribute('href')) {
-			if (node.getAttribute('href').startsWith('#/user_send:')) {
+			if (node.getAttribute('href').startsWith('#/user_send')) {
 				node.classList.add('cmd_user_send');
-				// 移除 target="_blank"
+				node.setAttribute('onclick', 'cmdFunc(this)');
 				node.removeAttribute('target');
 			}
 		}
@@ -1410,6 +1410,16 @@ if(true){
 		renderImagePreviews(img, attachedImages.at(-1));
 	}
 
+	window.cmdFunc = function(_this) {
+		
+		// 交互式发送消息功能
+		if (_this.classList.contains('cmd_user_send')) {
+			const msg = _this.textContent;
+			userInput.value = msg;
+			handleSend();
+		}
+	}
+
 	window.regenerateMessage = function(id) {
 		if (isProcessing) return;
 		AIService.performAIRequest(id);
@@ -1643,14 +1653,9 @@ if(true){
 	// 全局跳转事件
 	navigation.addEventListener('navigate', (event) => {
 		const url = new URL(event.destination.url);
-		console.log(url);
-		
-		// 交互式发送消息功能
-		if (url.hash.startsWith('#/user_send:')) {
+		// 忽略命令功能
+		if (url.hash.startsWith('#/')) {
 			event.preventDefault();
-			const msg = url.hash.substring('#/user_send:'.length);
-			userInput.value = decodeURIComponent(msg);
-			handleSend();
 		}
 	});
 
