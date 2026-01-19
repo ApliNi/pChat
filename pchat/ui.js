@@ -32,6 +32,15 @@ if(true){
 		if (!node.hasAttribute('target') && (node.hasAttribute('xlink:href') || node.hasAttribute('href'))) {
 			node.setAttribute('xlink:show', 'new');
 		}
+
+		// 交互式发送消息功能
+		if (node.hasAttribute('href')) {
+			if (node.getAttribute('href').startsWith('#/user_send:')) {
+				node.classList.add('cmd_user_send');
+				// 移除 target="_blank"
+				node.removeAttribute('target');
+			}
+		}
 	});
 
 	// PRE 添加只读属性
@@ -1631,6 +1640,20 @@ if(true){
 		img.src = _this.src;
 	}
 
+	// 全局跳转事件
+	navigation.addEventListener('navigate', (event) => {
+		const url = new URL(event.destination.url);
+		console.log(url);
+		
+		// 交互式发送消息功能
+		if (url.hash.startsWith('#/user_send:')) {
+			event.preventDefault();
+			const msg = url.hash.substring('#/user_send:'.length);
+			userInput.value = decodeURIComponent(msg);
+			handleSend();
+		}
+	});
+
 	// 监听模型改变，保存用户偏好
 	modelSelect.addEventListener('change', () => {
 		cfg.setItem('lastModel', modelSelect.value);
@@ -1749,6 +1772,7 @@ if(true){
 <pre id="defaultSystemPromptInput" contenteditable="plaintext-only">## Format
 - All block tokens should have a blank line before and after them.
 - Use \`\\n\\n$$ ... $$\\n\\n\` to display a block-level LaTeX formula.
+- Use \`[Hello](#/user_send:Hello)\`, this message is sent automatically when the user clicks this link.
 ---
 You are a helpful coding assistant. Answer concisely.</pre>
 
