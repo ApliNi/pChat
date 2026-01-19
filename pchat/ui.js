@@ -1777,7 +1777,7 @@ if(true){
 <pre id="defaultSystemPromptInput" contenteditable="plaintext-only">## Format
 - All block tokens should have a blank line before and after them.
 - Use \`\\n\\n$$ ... $$\\n\\n\` to display a block-level LaTeX formula.
-- Use \`[Hello](#/user_send:Hello)\`, this message is sent automatically when the user clicks this link.
+- Use \`[Hello](#/user_send)\`, After the user clicks, it will automatically send \`Hello\`
 ---
 You are a helpful coding assistant. Answer concisely.</pre>
 
