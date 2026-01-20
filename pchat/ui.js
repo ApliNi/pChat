@@ -1811,7 +1811,7 @@ if(true){
 <p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
 
 
-<h2>库</h2>
+<h2>模板</h2>
 <details class="think library"><summary>pChat Library</summary>
 	<div class="library-list">
 		<p class="loading">Loading...</p>
