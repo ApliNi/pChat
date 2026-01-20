@@ -653,7 +653,7 @@ if(true){
 		const text = `
 # [ pChat - AI Chat Terminal ]
 
-这是一个轻量级本地化 AI 聊天终端, 在浏览器上可用: https://pchat.ipacel.cc/
+这是一个本地化的轻量 AI 对话工具, 在浏览器上可用: https://pchat.ipacel.cc/
 
 ## 特性
 - 免费: 无需注册, 无需登录, 无需支付. 支持通过 Puter.js 和 OpenAI-API 提供模型服务.
@@ -688,6 +688,12 @@ if(true){
 - 记忆每条消息的渲染和折叠状态.
 - 思考模型的思考内容渲染在蓝色 [THINK] 折叠框内.
 - 图片查看器支持缩放和拖动.
+
+## 特殊功能
+- \`[Hello](#/user_send)\`: 点击自动发送消息, 用于 AI 生成回复选项.
+
+## 库
+支持导入远程聊天模板, 参考存储库 \`/pchat/library\` 目录.
 
 ## 设置页面
 - 导入导出: 支持将聊天导出到 JSON 文件, 导入时与当前会话合并, 覆盖 ID 相同的会话.
