@@ -1767,6 +1767,7 @@ if(true){
 <p>在这里导入导出数据和配置:
 	<button id="import-btn">[IMPORT]</button>
 	<button id="export-btn">[EXPORT]</button>
+	<button id="export-current-session-btn">[EXPORT_THIS_CHAT]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
 <p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
@@ -1821,6 +1822,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		const configBtn = document.getElementById('config-btn');
 		const importBtn = document.getElementById('import-btn');
 		const exportBtn = document.getElementById('export-btn');
+		const exportCurrentSessionBtn = document.getElementById('export-current-session-btn');
 		const importInput = document.getElementById('import-input');
 		const defaultSystemPromptInput = document.getElementById('defaultSystemPromptInput');
 		const resetPuterData = document.getElementById('reset-puter-data');
@@ -1948,10 +1950,10 @@ You are a helpful coding assistant. Answer concisely.</pre>
 			if (!confirm('确认: 导出数据')) {
 				return;
 			}
-
+		
 			const originalText = exportBtn.innerText;
 			exportBtn.innerText += '...';
-
+		
 			try {
 				const backupData = {
 					timestamp: Date.now(),
@@ -1960,7 +1962,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 					sessions: await IDBManager.getAllSessions(),
 					chats: await IDBManager.getAllChats(),
 				};
-
+		
 				// 3. 创建 Blob 并下载
 				const blob = new Blob([JSON.stringify(backupData, null, '\t')], { type: 'application/json' });
 				const url = URL.createObjectURL(blob);
@@ -1971,7 +1973,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 				a.click();
 				document.body.removeChild(a);
 				URL.revokeObjectURL(url);
-
+		
 			} catch (err) {
 				console.error('Export failed:', err);
 				alert('导出失败');
@@ -1979,7 +1981,61 @@ You are a helpful coding assistant. Answer concisely.</pre>
 				exportBtn.innerText = originalText;
 			}
 		});
-
+		
+		// 导出当前会话功能
+		exportCurrentSessionBtn.addEventListener('click', async () => {
+			// 检查是否有当前会话
+			if (!cfg.lastSessionId) {
+				alert('没有可导出的会话');
+				return;
+			}
+		
+			// 二次确认
+			if (!confirm('确认: 导出当前会话')) {
+				return;
+			}
+		
+			const originalText = exportCurrentSessionBtn.innerText;
+			exportCurrentSessionBtn.innerText += '...';
+		
+			try {
+				// 获取当前会话信息
+				const currentSession = sessions.find(s => s.id === cfg.lastSessionId);
+				if (!currentSession) {
+					alert('当前会话不存在');
+					return;
+				}
+		
+				// 获取当前会话的消息历史
+				const currentSessionMessages = await IDBManager.getSessionMessages(cfg.lastSessionId);
+		
+				// 构建导出数据
+				const sessionData = {
+					timestamp: Date.now(),
+					version: IDBManager.version,
+					sessions: [currentSession], // 只包含当前会话
+					chats: [{ id: cfg.lastSessionId, messages: currentSessionMessages }], // 只包含当前会话的消息
+				};
+		
+				// 创建 Blob 并下载
+				const blob = new Blob([JSON.stringify(sessionData, null, '\t')], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `pChat_Session_${currentSession.title.replace(/[<>:"/\\|?*]/g, '_') || 'untitled'}_${new Date().toISOString().slice(0,10)}.json`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+		
+			} catch (err) {
+				console.error('Export current session failed:', err);
+				alert('导出当前会话失败');
+			} finally {
+				exportCurrentSessionBtn.innerText = originalText;
+			}
+		});
+		
 		// 导入按钮点击
 		importBtn.addEventListener('click', () => {
 			importInput.click();
@@ -1989,28 +2045,33 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		importInput.addEventListener('change', (e) => {
 			const file = e.target.files[0];
 			if (!file) return;
-
+		
 			// 二次确认
 			if (!confirm('确认: 导入并合并数据, ID 冲突的数据将被覆盖')) {
 				importInput.value = ''; // 清空选择
 				return;
 			}
-
+		
 			const reader = new FileReader();
 			reader.onload = async (event) => {
 				try {
 					const data = JSON.parse(event.target.result);
 					
-					// 简单校验格式
-					if (!data.sessions || !data.chats) {
-						throw new Error('Invalid backup file format');
+					// 改进的校验格式 - 支持完整备份和单个会话
+					if (!data.hasOwnProperty('sessions') || !data.hasOwnProperty('chats')) {
+						throw new Error('Invalid backup file format: Missing required fields (sessions/chats)');
 					}
-
+			
+					// 验证 sessions 和 chats 是数组
+					if (!Array.isArray(data.sessions) || !Array.isArray(data.chats)) {
+						throw new Error('Invalid backup file format: sessions and chats must be arrays');
+					}
+			
 					// 执行导入
 					await IDBManager.importBackup(data);
 					
 					location.reload(); // 刷新页面以加载新数据
-
+			
 				} catch (err) {
 					console.error(err);
 					alert('Import failed: ' + err.message);
