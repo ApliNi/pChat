@@ -1,4 +1,4 @@
 [
-	{ "name": "猫猫", "info": "可爱猫猫的提示词", "url": "#/ApliNi.cat.json" },
+	{ "name": "交互式猫猫", "info": "一个可爱猫猫提示词", "url": "#/ApliNi.interactiveCat.json" },
 	{ "name": "示例对话文件", "info": "", "url": "#/__Example.json" }
 ]
