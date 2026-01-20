@@ -692,7 +692,7 @@ if(true){
 ## 特殊功能
 - \`[Hello](#/user_send)\`: 点击自动发送消息, 用于 AI 生成回复选项.
 
-## 库
+## 模板
 支持导入远程聊天模板, 参考存储库 \`/pchat/library\` 目录.
 
 ## 设置页面
@@ -1880,7 +1880,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 
 		let openaiApiModify = false;
 
-		// --- 库页面 ---
+		// --- 模板页面 ---
 		library.addEventListener('toggle', async () => {
 			const libraryList = library.querySelector('.library-list');
 			if(library.open){
@@ -1901,7 +1901,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 						lock = true;
 						div.querySelector('.install-btn').classList.add('loading');
 						try{
-							const url = li.url.replace(/^\#/, 'library/data/');
+							const url = li.url.replace(/^\#/, 'library/data');
 							const data = await fetch(url).then(res => res.json());
 							const result = await IDBManager.importBackup(data, true);
 							await cfg.setItem('lastSessionId', result.newId);
