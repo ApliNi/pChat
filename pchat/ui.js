@@ -239,7 +239,25 @@ if(true){
 			});
 		},
 
-		importBackup(data) {
+		importBackup(data, compatible = false) {
+
+			if (!data.hasOwnProperty('sessions') || !data.hasOwnProperty('chats')) {
+				throw new Error('Invalid backup file format: Missing required fields (sessions/chats)');
+			}
+			if (!Array.isArray(data.sessions) || !Array.isArray(data.chats)) {
+				throw new Error('Invalid backup file format: sessions and chats must be arrays');
+			}
+
+			// 兼容模式下自动处理冲突的 id
+			if(compatible){
+				const time = Date.now();
+				for(let i = 0; i < data.sessions.length; i++){
+					const newId = `sess_${time + i}`;
+					data.sessions[i].id = newId;
+					data.chats[i].id = newId;
+				}
+			}
+
 			return new Promise((resolve, reject) => {
 				const tx = this.db.transaction(['sessions', 'chats', 'config'], 'readwrite');
 
@@ -1772,8 +1790,14 @@ if(true){
 </p>
 <p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
 
-<h2>会话</h2>
 
+<h2>库</h2>
+<details class="think library"><summary>pChat Library</summary>
+	<div class="library-list"><p>正在加载...</p></div>
+</details>
+
+
+<h2>会话</h2>
 <p>默认系统提示词, 清空后跟随软件自动更新</p>
 <pre id="defaultSystemPromptInput" contenteditable="plaintext-only">## Format
 - All block tokens should have a blank line before and after them.
@@ -1782,9 +1806,9 @@ if(true){
 ---
 You are a helpful coding assistant. Answer concisely.</pre>
 
+
 <h2>模型</h2>
 <p>关闭配置页面后自动刷新模型列表</p>
-
 <details class="think model-service" data-service="Puter.js" open><summary>Puter.js</summary>
 	<h2>优先显示模型</h2>
 	<table class="input-config-table">
@@ -1797,7 +1821,6 @@ You are a helpful coding assistant. Answer concisely.</pre>
 	<p>可能还需要前往 <a href="https://puter.com/" target="_blank">https://puter.com/</a> 删除所有 Cookie 来刷新账户</p>
 	<p>禁用此服务后刷新页面以取消 puter.js 资源加载</p>
 </details>
-
 <details class="think model-service" data-service="OpenAI-API"><summary>OpenAI API</summary>
 	<h2>API 配置</h2>
 	<table class="input-config-table">
@@ -1831,8 +1854,45 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		const openaiApiKeyInput = document.getElementById('openaiApiKeyInput');
 		const openaiApiKeyCount = document.getElementById('openaiApiKeyCount');
 		const openaiPriorityModelsInput = document.getElementById('openaiPriorityModelsInput');
+		const library = document.querySelector('#config details.library');
 
 		let openaiApiModify = false;
+
+		// --- 库页面 ---
+		library.addEventListener('toggle', async () => {
+			const libraryList = library.querySelector('.library-list');
+			if(library.open){
+				const list = await fetch('./library/index.json').then(res => res.json()).catch(() => []);
+				libraryList.innerHTML = '';
+				for(const li of list){
+					const div = document.createElement('div');
+					div.innerHTML = `
+						<h3 class="name"></h3>
+						<p class="info"></p>
+						<button class="install-btn">[INSTALL]</button>
+					`;
+					div.querySelector('.name').textContent = li.name;
+					div.querySelector('.info').textContent = li.info;
+					let lock = false;
+					div.querySelector('.install-btn').addEventListener('click', async () => {
+						if(lock) return;
+						lock = true;
+						try{
+							const url = li.url.replace(/^\#/, 'library/data/');
+							const data = await fetch(url).then(res => res.json());
+							await IDBManager.importBackup(data, true);
+							location.reload();
+						}catch(err){
+							console.error('Install failed:', err);
+							alert('导入失败');
+						}
+					});
+					libraryList.appendChild(div);
+				}
+			}else{
+				libraryList.innerHTML = '<p>正在加载...</p>';
+			}
+		});
 
 		// --- 配置页面数据更新和监听 ---
 
@@ -1947,7 +2007,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		// 导出功能
 		exportBtn.addEventListener('click', async () => {
 			// 二次确认
-			if (!confirm('确认: 导出数据')) {
+			if (!confirm('确认: 导出所有数据')) {
 				return;
 			}
 		
@@ -2038,6 +2098,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		
 		// 导入按钮点击
 		importBtn.addEventListener('click', () => {
+			importInput.value = '';
 			importInput.click();
 		});
 
@@ -2045,30 +2106,16 @@ You are a helpful coding assistant. Answer concisely.</pre>
 		importInput.addEventListener('change', (e) => {
 			const file = e.target.files[0];
 			if (!file) return;
-		
-			// 二次确认
-			if (!confirm('确认: 导入并合并数据, ID 冲突的数据将被覆盖')) {
-				importInput.value = ''; // 清空选择
-				return;
-			}
+
+			// 选择是否覆盖 ID 相同的会话 (是, 否, 取消)
+			const compatible = !confirm(`是否覆盖 ID 相同的会话?\n  - 确定: 保留导入的版本\n  - 取消: 同时保留两者`);
 		
 			const reader = new FileReader();
 			reader.onload = async (event) => {
 				try {
 					const data = JSON.parse(event.target.result);
 					
-					// 改进的校验格式 - 支持完整备份和单个会话
-					if (!data.hasOwnProperty('sessions') || !data.hasOwnProperty('chats')) {
-						throw new Error('Invalid backup file format: Missing required fields (sessions/chats)');
-					}
-			
-					// 验证 sessions 和 chats 是数组
-					if (!Array.isArray(data.sessions) || !Array.isArray(data.chats)) {
-						throw new Error('Invalid backup file format: sessions and chats must be arrays');
-					}
-			
-					// 执行导入
-					await IDBManager.importBackup(data);
+					await IDBManager.importBackup(data, compatible);
 					
 					location.reload(); // 刷新页面以加载新数据
 			
