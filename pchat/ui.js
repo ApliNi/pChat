@@ -1795,7 +1795,9 @@ if(true){
 
 <h2>库</h2>
 <details class="think library"><summary>pChat Library</summary>
-	<div class="library-list"><p>正在加载...</p></div>
+	<div class="library-list">
+		<p class="loading">Loading...</p>
+	</div>
 </details>
 
 
@@ -1893,7 +1895,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 					libraryList.appendChild(div);
 				}
 			}else{
-				libraryList.innerHTML = '<p>正在加载...</p>';
+				libraryList.innerHTML = '<p class="loading">Loading...</p>';
 			}
 		});
 
