@@ -1080,10 +1080,10 @@ if(true){
 			const timerInterval = setInterval(() => {
 				if(firstTokenTime === null){
 					loadingTime = ((Date.now() - startTime) / 1000).toFixed(1);
-					uiElements.metaDiv.innerText = `${loadingTime}s`;
+					uiElements.metaDiv.innerText = `${loadingTime}s [Load]`;
 				}else{
 					runTime = ((Date.now() - firstTokenTime) / 1000).toFixed(1);
-					uiElements.metaDiv.innerText = `${loadingTime}s | ${runTime}s`;
+					uiElements.metaDiv.innerText = `${loadingTime}s | ${runTime}s [Run]`;
 				}
 			}, 100);
 
@@ -1181,9 +1181,9 @@ if(true){
 				clearInterval(timerInterval);
 				const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 				const estimatedTokens = Math.max(1, Math.round((textItem.text.length + textItem.reasoning.length) / 2.5)); // 估算 Token
-				const tps = (estimatedTokens / duration).toFixed(1);
+				const tps = Math.round(estimatedTokens / duration);
 				// 定义统计文本变量
-				const statsText = `${loadingTime}s | ${runTime}s | ${tps} T/s`;
+				const statsText = `${Math.round(loadingTime)}s | ${Math.round(runTime)}s | ${tps} T/s`;
 				uiElements.metaDiv.innerText = statsText;
 
 				// 更新内存中的历史记录
