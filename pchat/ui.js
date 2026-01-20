@@ -1073,10 +1073,18 @@ if(true){
 
 			uiElements.metaDiv.style.color = '';
 			
-			const startTime = Date.now();
+			let startTime = Date.now();
+			let loadingTime = 0;
+			let firstTokenTime = null;
+			let runTime = 0;
 			const timerInterval = setInterval(() => {
-				const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-				uiElements.metaDiv.innerText = `GENERATING: ${elapsed}s`;
+				if(firstTokenTime === null){
+					loadingTime = ((Date.now() - startTime) / 1000).toFixed(1);
+					uiElements.metaDiv.innerText = `${loadingTime}s`;
+				}else{
+					runTime = ((Date.now() - firstTokenTime) / 1000).toFixed(1);
+					uiElements.metaDiv.innerText = `${loadingTime}s | ${runTime}s`;
+				}
 			}, 100);
 
 			try {
@@ -1107,6 +1115,10 @@ if(true){
 					// 检查是否被中止
 					if (abortController.signal.aborted) {
 						break;
+					}
+
+					if(firstTokenTime === null){
+						firstTokenTime = Date.now();
 					}
 					
 					if(part.reasoning){
@@ -1171,7 +1183,7 @@ if(true){
 				const estimatedTokens = Math.max(1, Math.round((textItem.text.length + textItem.reasoning.length) / 2.5)); // 估算 Token
 				const tps = (estimatedTokens / duration).toFixed(1);
 				// 定义统计文本变量
-				const statsText = `Time: ${duration}s | ${tps} Token/s`;
+				const statsText = `${loadingTime}s | ${runTime}s | ${tps} T/s`;
 				uiElements.metaDiv.innerText = statsText;
 
 				// 更新内存中的历史记录
@@ -1289,7 +1301,7 @@ if(true){
 			<div class="content markdown-body ${isCollapsed ? 'collapsed' : ''}" contenteditable="${isRendered ? 'false' : 'plaintext-only'}" spellcheck="false"></div>
 			<div class="msg-footer">
 				${buttonsHtml}
-				<div class="meta-stats"></div>
+				<div class="meta-stats" title="Loading Time | Run Time | Token/s"></div>
 			</div>
 		`;
 
