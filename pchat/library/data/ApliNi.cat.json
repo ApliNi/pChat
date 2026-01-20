@@ -1,22 +1,22 @@
 {
-	"timestamp": 1768891527089,
+	"timestamp": 1768894920864,
 	"version": 3,
 	"sessions": [
 		{
-			"id": "sess_1768888340040",
+			"id": "sess_1768894903232",
 			"title": "猫猫",
-			"timestamp": 1768888340042,
+			"timestamp": 1768894903232,
 			"pinned": false
 		}
 	],
 	"chats": [
 		{
-			"id": "sess_1768888340040",
+			"id": "sess_1768894903232",
 			"messages": [
 				{
 					"role": "system",
-					"isRaw": true,
-					"isCollapsed": false,
+					"isRaw": false,
+					"isCollapsed": true,
 					"content": [
 						{
 							"type": "text",

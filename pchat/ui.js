@@ -248,11 +248,13 @@ if(true){
 				throw new Error('Invalid backup file format: sessions and chats must be arrays');
 			}
 
-			// 兼容模式下自动处理冲突的 id
+			// 兼容模式下重写所有 id
+			let newId = '';
 			if(compatible){
 				const time = Date.now();
 				for(let i = 0; i < data.sessions.length; i++){
-					const newId = `sess_${time + i}`;
+					newId = `sess_${time + i}`;
+					data.sessions[i].timestamp = time;
 					data.sessions[i].id = newId;
 					data.chats[i].id = newId;
 				}
@@ -274,7 +276,7 @@ if(true){
 					data.chats.forEach(chat => chatStore.put(chat));
 				}
 
-				tx.oncomplete = () => resolve();
+				tx.oncomplete = () => resolve({ newId });
 				tx.onerror = () => reject(tx.error);
 			});
 		},
@@ -1867,7 +1869,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 				for(const li of list){
 					const div = document.createElement('div');
 					div.innerHTML = `
-						<h3 class="name"></h3>
+						<p class="name"></p>
 						<p class="info"></p>
 						<button class="install-btn">[INSTALL]</button>
 					`;
@@ -1880,7 +1882,8 @@ You are a helpful coding assistant. Answer concisely.</pre>
 						try{
 							const url = li.url.replace(/^\#/, 'library/data/');
 							const data = await fetch(url).then(res => res.json());
-							await IDBManager.importBackup(data, true);
+							const result = await IDBManager.importBackup(data, true);
+							await cfg.setItem('lastSessionId', result.newId);
 							location.reload();
 						}catch(err){
 							console.error('Install failed:', err);

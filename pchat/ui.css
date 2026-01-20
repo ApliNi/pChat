@@ -979,6 +979,44 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	-webkit-text-security: none;
 }
 
+.config .library-list {
+
+}
+
+.config .library-list > div {
+	display: flex;
+	align-items: center;
+	white-space: nowrap;
+	background-color: transparent;
+	padding: 5px 7px;
+	margin: 5px 0;
+	transition: all 0.2s;
+}
+.config .library-list > div > * {
+	margin: 0;
+}
+.config .library-list > div:hover {
+	background-color: #4c4c4c7c;
+}
+.config .library-list > div > .name::before {
+	content: '[';
+}
+.config .library-list > div > .name::after {
+	content: ']';
+	margin-right: 10px;
+}
+.config .library-list > div > .info {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.config .library-list > div > .install-btn {
+	margin-left: auto;
+	opacity: 0.7;
+}
+.config .library-list > div > .install-btn:hover {
+	opacity: 1;
+}
+
 #sidebar .sidebar-header,
 #sidebar #history-list {
 	transition: opacity 0.2s;
