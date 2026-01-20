@@ -37,6 +37,17 @@
 @keyframes enterOpacity { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: 0; } }
 @keyframes blink { 50% { opacity: 0; } }
+@keyframes aiMsgLoading {
+	33.33% {
+		content: '[/]';
+	}
+	66.66% {
+		content: '[-]';
+	}
+	100% {
+		content: '[\\]';
+	}
+}
 
 * { box-sizing: border-box; margin: 0; }
 
@@ -571,8 +582,10 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 #attached-image-btn:hover { opacity: 1; }
 
 .message.isProcessing .content::after {
-	content: '█';
-	animation: blink 1s step-end infinite;
+	/* content: '█'; */
+	/* animation: blink 1s step-end infinite; */
+	content: '[/]';
+	animation: aiMsgLoading 0.85s infinite;
 	margin-left: 2px;
 	color: var(--ai-msg-color);
 }
@@ -1021,6 +1034,13 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 .config .library-list > div > .install-btn:hover {
 	opacity: 1;
+}
+.config .library-list > div > .install-btn::after {
+	content: '[+]';
+}
+.config .library-list > div > .install-btn.loading::after {
+	content: '[/]';
+	animation: aiMsgLoading 0.85s infinite;
 }
 
 #sidebar .sidebar-header,

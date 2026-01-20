@@ -1891,7 +1891,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 					div.innerHTML = `
 						<p class="name"></p>
 						<p class="info"></p>
-						<button class="install-btn">[INSTALL]</button>
+						<button class="install-btn"></button>
 					`;
 					div.querySelector('.name').textContent = li.name;
 					div.querySelector('.info').textContent = li.info;
@@ -1899,6 +1899,7 @@ You are a helpful coding assistant. Answer concisely.</pre>
 					div.querySelector('.install-btn').addEventListener('click', async () => {
 						if(lock) return;
 						lock = true;
+						div.querySelector('.install-btn').classList.add('loading');
 						try{
 							const url = li.url.replace(/^\#/, 'library/data/');
 							const data = await fetch(url).then(res => res.json());
