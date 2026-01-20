@@ -1,0 +1,54 @@
+{
+	"timestamp": 1768895133867,
+	"version": 3,
+	"sessions": [
+		{
+			"id": "sess_1768895116336",
+			"title": "示例对话文件",
+			"timestamp": 1768895116336,
+			"pinned": false
+		}
+	],
+	"chats": [
+		{
+			"id": "sess_1768895116336",
+			"messages": [
+				{
+					"role": "system",
+					"isRaw": false,
+					"isCollapsed": true,
+					"content": [
+						{
+							"type": "text",
+							"text": "## Format\n- All block tokens should have a blank line before and after them.\n- Use `\\n\\n$$ ... $$\\n\\n` to display a block-level LaTeX formula.\n- Use `[Hello](#/user_send)`, After the user clicks, it will automatically send `Hello`\n---\nYou are a helpful coding assistant. Answer concisely."
+						}
+					],
+					"id": "msg_1768895116336_6915"
+				},
+				{
+					"role": "user",
+					"content": [
+						{
+							"type": "text",
+							"text": "你好呀"
+						}
+					],
+					"id": "msg_1768895120525_3819",
+					"isRaw": true
+				},
+				{
+					"role": "assistant",
+					"content": [
+						{
+							"type": "text",
+							"text": "你好！有什么我可以帮忙的吗？\n\n我可以帮你：\n- [写代码](#/user_send \"用 Python 写一个快速排序\")\n- [解释概念](#/user_send \"什么是 RESTful API？\")\n- [翻译文本](#/user_send \"用英语翻译：你好，世界！\")"
+						}
+					],
+					"id": "msg_1768895120549_2333",
+					"model": "gemini-2.5-pro",
+					"stats": "Time: 4.68s | 12.0 Token/s"
+				}
+			]
+		}
+	]
+}
