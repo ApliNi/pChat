@@ -62,8 +62,6 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 
 		else if(type === 'renderSidebar') {
 			const { sessions, lastSessionId } = data;
-			console.log(data);
-			
 
 			// 首先按置顶状态排序，然后按时间戳排序
 			const sortedSessions = [...sessions].sort((a, b) => {
