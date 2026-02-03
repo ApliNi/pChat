@@ -19,6 +19,7 @@ import { switchSession } from './session.js';
 import { createIntroSession } from './session.js';
 import { createNewSession } from './session.js';
 import { aiService } from './aiService.js';
+import { modelSelect } from './dom.js';
 
 if(true){
 
