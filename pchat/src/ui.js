@@ -25,6 +25,7 @@ if(true){
 
 	// 加载模块
 	await import('./global.js');
+	await import('./listener.js');
 	await import('./modules/configPage.js');
 	await import('./modules/openImg.js');
 	await import('./modules/pipWindow.js');
