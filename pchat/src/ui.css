@@ -1,19 +1,19 @@
 
 @font-face {
 	font-family: 'HarmonyOS';
-	src: url('./res/HarmonyOS_Sans_SC_Medium.subset.woff2') format('woff2');
+	src: url('/res/HarmonyOS_Sans_SC_Medium.subset.woff2') format('woff2');
 	font-display: swap;
 }
 
 @font-face {
 	font-family: 'JetBrainsMono';
-	src: url('./res/JetBrainsMono-Regular.woff2') format('woff2');
+	src: url('/res/JetBrainsMono-Regular.woff2') format('woff2');
 	font-display: swap;
 }
 
 @font-face {
 	font-family: 'Ubuntu';
-	src: url('./res/Ubuntu-Regular.subset.woff2') format('woff2'),
+	src: url('/res/Ubuntu-Regular.subset.woff2') format('woff2'),
 		local('JetBrainsMono');
 	word-spacing: -5px; /*等宽空格间距太大*/
 	font-display: swap;
@@ -726,6 +726,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .markdown-body img,
 .markdown-body video {
 	max-width: 100%;
+	margin: 0.5rem 0;
 }
 
 .markdown-body iframe {
@@ -879,6 +880,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .markdown-body ul > li:last-child,
 .markdown-body ol > li:last-child,
 .markdown-body li > *:last-child,
+.markdown-body p > *:last-child,
 .markdown-body details > *:last-child {
 	margin-bottom: 0 !important;
 }
