@@ -35,7 +35,10 @@ if(true){
 	document.querySelector('head').appendChild(fontLink);
 
 	// 异步加载模型
-	aiService.loadModels();
+	aiService.loadModels().then(() => {
+		// 保存当前选择的模型
+		cfg.setItem('lastModel', modelSelect.value);
+	});
 
 	// 重置欢迎会话
 	await createIntroSession();
