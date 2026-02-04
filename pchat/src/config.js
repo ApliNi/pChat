@@ -21,7 +21,7 @@ export const cfg = {
 window.cfg = cfg;
 
 export const tmp = {
-	chatHistory: [],
+	messages: [],
 	attachedImages: [],
 	isProcessing: false,
 	abortController: null,

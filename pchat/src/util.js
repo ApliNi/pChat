@@ -80,7 +80,7 @@ export const handleSend = async () => {
 
 		const userMsgId = generateId();
 		const userMsg = { role: 'user', content: msgContent, id: userMsgId, isRaw: true };
-		tmp.chatHistory.push(userMsg);
+		tmp.messages.push(userMsg);
 		await appendMsgDOM(userMsg);
 
 		// 重置附件

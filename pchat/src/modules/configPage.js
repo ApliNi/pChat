@@ -1,3 +1,4 @@
+import { aiService } from "../aiService.js";
 import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
 import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList } from '../dom.js';
@@ -226,7 +227,7 @@ configBtn.addEventListener('click', async () => {
 		// 重新加载模型列表
 		if(openaiApiModify){
 			openaiApiModify = false;
-			AIService.loadModels();
+			aiService.loadModels();
 		}
 	}
 	sidebarToggle.checked = false;

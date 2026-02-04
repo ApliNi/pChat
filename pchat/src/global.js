@@ -37,7 +37,7 @@ window.toggleMessageView = async function(id) {
 	const isRendered = msgDiv.dataset.rendered === 'true';
 	
 	// 获取当前对应的历史消息内容
-	const msgItem = tmp.chatHistory.find(m => m.id === id);
+	const msgItem = tmp.messages.find(m => m.id === id);
 	if (!msgItem) return;
 	const rawContent = msgItem.content.find(c => c.type === 'text')?.text ?? '';
 
@@ -91,7 +91,7 @@ window.toggleMessageCollapse = async function(id, btn) {
 	// 切换 collapsed 类
 	contentDiv.classList.toggle('collapsed');
 	
-	const msgItem = tmp.chatHistory.find(m => m.id === id);
+	const msgItem = tmp.messages.find(m => m.id === id);
 	msgItem.isCollapsed = contentDiv.classList.contains('collapsed');
 
 	btn.innerText = msgItem.isCollapsed ? '[+]' : '[-]';
@@ -113,10 +113,10 @@ window.toggleMessageCollapse = async function(id, btn) {
 window.regenerateResponseTo = async function(id) {
 	if (tmp.isProcessing) return;
 
-	const userIndex = tmp.chatHistory.findIndex(m => m.id === id);
+	const userIndex = tmp.messages.findIndex(m => m.id === id);
 	if (userIndex === -1) return;
 
-	const nextMsg = tmp.chatHistory[userIndex + 1];
+	const nextMsg = tmp.messages[userIndex + 1];
 
 	// 情况 1: 下一条消息存在且是 AI 回复 -> 直接重新生成该条
 	if (nextMsg && nextMsg.role === 'assistant') {
@@ -134,7 +134,7 @@ window.regenerateResponseTo = async function(id) {
 			id: newAiId,
 			model: currentModel
 		};
-		tmp.chatHistory.splice(userIndex + 1, 0, newMsgObj);
+		tmp.messages.splice(userIndex + 1, 0, newMsgObj);
 
 		// 2. 创建 DOM 元素
 		// 先通过 appendMsgDOM 创建（默认会加到最后）
@@ -179,7 +179,7 @@ window.confirmDeleteMsg = async function(id) {
 			setTimeout(() => el.remove(), 200);
 		}
 		removeMinimapItem(id);
-		tmp.chatHistory = tmp.chatHistory.filter(item => item.id !== id);
+		tmp.messages = tmp.messages.filter(item => item.id !== id);
 		await saveCurrentSession();
 	}
 }
@@ -189,11 +189,11 @@ window.forkSession = async function(id) {
 	if (tmp.isProcessing) return;
 
 	// 1. 找到当前点击消息的索引
-	const index = tmp.chatHistory.findIndex(m => m.id === id);
+	const index = tmp.messages.findIndex(m => m.id === id);
 	if (index === -1) return;
 
 	// 2. 截取历史记录：从开头到当前消息 (使用深拷贝断开引用关联)
-	const forkedHistory = JSON.parse(JSON.stringify(tmp.chatHistory.slice(0, index + 1)));
+	const forkedHistory = JSON.parse(JSON.stringify(tmp.messages.slice(0, index + 1)));
 
 	// 3. 准备新会话的数据
 	const newSessionId = generateSessionId();
@@ -232,7 +232,7 @@ window.removeAttachedImage = (imgId, msgId) => {
 	} else {
 		if(tmp.isProcessing) return;
 		// 从当前聊天中删除图片并保存
-		const msg = tmp.chatHistory.find(msg => msg.id === msgId);
+		const msg = tmp.messages.find(msg => msg.id === msgId);
 		if(msg){
 			msg.content = msg.content.filter(item => item.id !== imgId);
 			saveCurrentSession();

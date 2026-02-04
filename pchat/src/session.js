@@ -1,4 +1,4 @@
-import { appendMsgDOM } from "./chat.js";
+import { appendMsgDOM, scrollToMinimapBottom } from "./chat.js";
 import { cfg, tmp } from "./config.js";
 import { IDBManager } from "./db.js";
 import { historyList, messageArea, rightPanel, userInput } from "./dom.js";
@@ -9,7 +9,7 @@ import { worker } from "./worker.js";
 
 export const saveCurrentSession = async () => {
 	if (!cfg.lastSessionId) return;
-	await IDBManager.saveSessionMessages(cfg.lastSessionId, tmp.chatHistory);
+	await IDBManager.saveSessionMessages(cfg.lastSessionId, tmp.messages);
 };
 
 export const saveSessionMetaLocal = async (session, _renderSidebar = true) => {
@@ -57,7 +57,7 @@ export const createNewSession = async () => {
 
 	cfg.setItem('lastSessionId', newId);
 
-	tmp.chatHistory = [sysMsg];
+	tmp.messages = [sysMsg];
 
 	await saveSessionMetaLocal(newSession);
 	await saveCurrentSession();
@@ -102,56 +102,94 @@ export const createIntroSession = async () => {
 	await IDBManager.saveSessionMessages(introSession.id, introMessages);
 };
 
+let switchSessionLock = '';
 export const switchSession = async (id) => {
 	if (tmp.isProcessing) return;
 	if (cfg.lastSessionId === id && messageArea.innerHTML !== '') return;
 
 	cfg.setItem('lastSessionId', id);
 
-	const session = tmp.sessions.find(s => s.id === id);
-	if (session) {
-		updateTitle(session.title);
+	// 等待上一个渲染任务完成
+	const nowSessionId = cfg.lastSessionId;
+	if(switchSessionLock !== ''){
+		switchSessionLock = 'end';
+		while(switchSessionLock !== '') await new Promise((resolve) => requestAnimationFrame(resolve));
 	}
+	switchSessionLock = nowSessionId;
 
 	try {
-		tmp.chatHistory = await IDBManager.getSessionMessages(id);
+		const session = await IDBManager.getSession(id);
+		updateTitle(session.title);
+		tmp.messages = await IDBManager.getSessionMessages(id);
 	} catch (err) {
-		tmp.chatHistory = [];
+		tmp.messages = [];
 	}
 
-	messageArea.style.display = 'none';
-	messageArea.innerHTML = '';
-	rightPanel.scrollTop = 0; // 防止继承上一个聊天的滚动位置
-	minimap.innerHTML = '';
-
-	for (const msg of tmp.chatHistory) {
-		const els = await appendMsgDOM({ ...msg, animate: false });
-	}
-
-	messageArea.style.display = 'flex';
-
-	// 欢迎会话不滚动到底部
-	if (id !== 'sess_welcome') {
-		scrollToBottom(true);
-	}
+	// 滚动到底部
+	const chatScrollToBottom = () => {
+		// 欢迎会话不滚动到底部
+		if (id !== 'sess_welcome') {
+			scrollToBottom(true);
+		}
+	};
 
 	renderSidebar(true);
-
-	// 震动反馈
 	vibrate(25);
+
+	// messageArea.style.display = 'none';
+	messageArea.innerHTML = '';
+	rightPanel.scrollTop = 0; // 防止继承上一个聊天的滚动位置
+	minimap.style.display = 'none';
+	minimap.innerHTML = '';
+
+	let cssAnimation = true;
+	setTimeout(() => {
+		cssAnimation = false;
+	}, 700);
+
+	// 假设可视范围最多容纳 n 条消息
+	const visibleMsgs = 20;
+
+	// 逆向遍历 tmp.chatHistory
+	for (let i = tmp.messages.length - 1; i >= 0; i--) {
+		const msg = tmp.messages[i];
+		const count = tmp.messages.length - i;
+
+		await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: count < visibleMsgs || cssAnimation });
+		if(count < visibleMsgs || cssAnimation) chatScrollToBottom(true);
+
+		// 如果渲染过程中切换会话则停止
+		if(nowSessionId !== switchSessionLock) break;
+
+		// 延迟渲染避免卡顿
+		await new Promise((resolve) => requestAnimationFrame(resolve));
+	}
+
+	minimap.style.display = 'flex';
+	scrollToMinimapBottom();
+
+	switchSessionLock = '';
+
+	// for (const msg of tmp.chatHistory) {
+	// 	const els = await appendMsgDOM({ ...msg, animate: false });
+	// }
+
+	// messageArea.style.display = 'flex';
 };
 
-export const renderSidebar = async (onlyHighlight = false) => {
-	if (onlyHighlight) {
+export const renderSidebar = async (onlyHighlight = false, scrollIntoViewBlock = 'center') => {
+	if(onlyHighlight){
 		for (const el of historyList.querySelectorAll('.history-item.active')) {
 			el.classList.remove('active');
 		}
-		historyList.querySelector(`[data-session-id="${cfg.lastSessionId}"]`)?.classList?.add('active');
-		return;
+	}else{
+		const html = await worker.run('renderSidebar', { sessions: [...tmp.sessions] });
+		historyList.innerHTML = html;
 	}
 
-	const html = await worker.run('renderSidebar', { sessions: [...tmp.sessions], lastSessionId: cfg.lastSessionId });
-	historyList.innerHTML = html;
+	const active = historyList.querySelector(`[data-session-id="${cfg.lastSessionId}"]`);
+	active?.classList?.add('active');
+	active?.scrollIntoView({ behavior: 'smooth', block: scrollIntoViewBlock });
 };
 
 export const renameSession = async (e, sessionId, newTitle) => {

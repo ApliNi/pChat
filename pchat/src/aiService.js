@@ -208,13 +208,13 @@ export const aiService = {
 		let msgIdx, msgDiv, contentHistory, uiElements, thisContent;
 
 		if (msgId && document.getElementById(msgId)) {
-			msgIdx = tmp.chatHistory.findIndex(m => m.id === msgId);
+			msgIdx = tmp.messages.findIndex(m => m.id === msgId);
 			if (msgIdx === -1) {
 				toggleState(false);
 				return;
 			}
-			contentHistory = tmp.chatHistory.slice(0, msgIdx);
-			thisContent = tmp.chatHistory[msgIdx];
+			contentHistory = tmp.messages.slice(0, msgIdx);
+			thisContent = tmp.messages[msgIdx];
 			
 			msgDiv = document.getElementById(msgId);
 			const contentDiv = msgDiv.querySelector('.content');
@@ -229,7 +229,7 @@ export const aiService = {
 			contentDiv.textContent = '';
 			uiElements = { contentDiv, metaDiv, msgDiv, };
 		} else {
-			contentHistory = [...tmp.chatHistory];
+			contentHistory = [...tmp.messages];
 			msgId = generateId();
 			thisContent = {
 				role: 'assistant',
@@ -238,8 +238,8 @@ export const aiService = {
 				model: cfg.lastModel,
 				stats: '',
 			};
-			tmp.chatHistory.push(thisContent);
-			msgIdx = tmp.chatHistory.length - 1;
+			tmp.messages.push(thisContent);
+			msgIdx = tmp.messages.length - 1;
 			uiElements = await appendMsgDOM(thisContent);
 			msgDiv = uiElements.msgDiv;
 			msgDiv.classList.add('isProcessing');
@@ -354,9 +354,9 @@ export const aiService = {
 
 			// 更新内存中的历史记录
 			if(textItem.reasoning === '') delete textItem.reasoning;
-			tmp.chatHistory[msgIdx].content = [ textItem ];
-			tmp.chatHistory[msgIdx].model = cfg.lastModel;
-			tmp.chatHistory[msgIdx].stats = statsText;
+			tmp.messages[msgIdx].content = [ textItem ];
+			tmp.messages[msgIdx].model = cfg.lastModel;
+			tmp.messages[msgIdx].stats = statsText;
 
 			// 最后再一次性保存到 IndexedDB (避免频繁 IO)
 			await saveCurrentSession();

@@ -63,6 +63,7 @@ export const appendMsgDOM = async ({
 	isCollapsed = false,
 	isRaw = undefined,
 	display = '',
+	fromTopToBottom = true,
 }) => {
 	const msgDiv = document.createElement('div');
 	msgDiv.className = `message ${role}`;
@@ -159,9 +160,13 @@ export const appendMsgDOM = async ({
 		}
 	});
 
-	messageArea.appendChild(msgDiv);
+	if(fromTopToBottom){
+		messageArea.appendChild(msgDiv);
+	}else{
+		messageArea.prepend(msgDiv);
+	}
 
-	addMinimapItem(role, id, isCollapsed);
+	addMinimapItem(role, id, isCollapsed, fromTopToBottom);
 
 	if(animate) scrollToBottom();
 
@@ -295,7 +300,7 @@ if(true){
 }
 
 export const updateHistoryContent = async (id, newText) => {
-	const item = tmp.chatHistory.find(m => m.id === id);
+	const item = tmp.messages.find(m => m.id === id);
 	if (item) {
 		if(!Array.isArray(item.content)) item.content = [ { type: 'text', text: item.content } ];
 		for(const c of item.content){
@@ -329,7 +334,7 @@ export const renderContent = async (content, renderHTML = true) => {
 };
 
 // 添加小方块
-export const addMinimapItem = (role, id, isCollapsed = false) => {
+export const addMinimapItem = (role, id, isCollapsed = false, fromTopToBottom = true) => {
 	const item = document.createElement('a');
 	item.className = `minimap-item ${role} ${isCollapsed ? 'collapsed' : ''}`;
 	item.href = `#${id}`;
@@ -346,7 +351,11 @@ export const addMinimapItem = (role, id, isCollapsed = false) => {
 		}
 	};
 	
-	minimap.appendChild(item);
+	if(fromTopToBottom){
+		minimap.appendChild(item);
+	}else{
+		minimap.prepend(item);
+	}
 	scrollToMinimapBottom();
 };
 
