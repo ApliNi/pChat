@@ -1,6 +1,6 @@
 import { aiService } from "./aiService.js";
 import { cfg, tmp } from "./config.js";
-import { attachedImageBtn, attachedImageInput, modelSelect, newChatBtn, rightPanel, sendBtn, userInput } from "./dom.js";
+import { attachedImageBtn, attachedImageInput, modelSelect, newChatBtn, rightPanel, sendBtn, sidebarToggle, userInput } from "./dom.js";
 import { attachedImage, handleSend } from "./util.js";
 import { createNewSession } from './session.js';
 
