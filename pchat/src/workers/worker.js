@@ -61,7 +61,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 		}
 
 		else if(type === 'renderSidebar') {
-			const { sessions, lastSessionId } = data;
+			const { sessions } = data;
 
 			// 首先按置顶状态排序，然后按时间戳排序
 			const sortedSessions = [...sessions].sort((a, b) => {
@@ -95,7 +95,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 				html += `<details class="history-group pinned-group" open><summary class="history-group-title">PINNED</summary>`;
 				pinnedSessions.forEach(session => {
 					html += `
-						<div class="history-item ${session.id === lastSessionId ? 'active' : ''}" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
+						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
 							<div class="history-info">
 								<div class="history-title" title="Double click to rename">${str(session.title) || 'New Session'}</div>
 								<div class="history-date">${formatDate(session.timestamp)}</div>
@@ -116,7 +116,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 				html += `<details class="history-group" open><summary class="history-group-title">${time}</summary>`;
 				groupSessions.forEach(session => {
 					html += `
-						<div class="history-item ${session.id === lastSessionId ? 'active' : ''}" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
+						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
 							<div class="history-info">
 								<div class="history-title" title="Double click to rename">${str(session.title) || 'New Session'}</div>
 								<div class="history-date">${formatDate(session.timestamp)}</div>
