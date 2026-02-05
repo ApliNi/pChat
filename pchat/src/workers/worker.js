@@ -2,28 +2,9 @@
 import hljs from 'https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/+esm';
 import Katex from 'https://cdn.jsdelivr.net/npm/katex@0.16.27/+esm';
 import { Marked } from 'https://cdn.jsdelivr.net/npm/marked@17.0.1/+esm';
-import { markedHighlight } from 'https://cdn.jsdelivr.net/npm/marked-highlight@2.2.3/+esm';
 import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.6/+esm';
 
 (async () => {
-
-	const marked = new Marked(
-		markedHighlight({
-			emptyLangClass: 'hljs',
-			langPrefix: 'hljs language-',
-			highlight(code, lang, info) {
-				const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-				return hljs.highlight(code, { language }).value;
-			}
-		})
-	);
-
-	marked.setOptions({
-		breaks: true,
-		gfm: true,
-	});
-
-	marked.use(markedKatex({ throwOnError: false, nonStandard: true }));
 
 	// --- function ---
 
@@ -37,16 +18,60 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 		return `${year}/${month}/${day} ${hour}:${minute}`;
 	};
 
-	const str = (str) => str
+	const str = (str) => `${str ?? ''}`
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#039;');
 
+	const marked = new Marked();
+
+	marked.use(markedKatex({ throwOnError: false, nonStandard: true }));
+	marked.use({
+		// async: true,
+		breaks: true,
+		gfm: true,
+
+		renderer: {
+
+			image: (token) => {
+				let { href, raw, text, title } = token;
+				return `<img src="${href}" alt="${str(text)}" title="${str(title ?? text)}" class="img-node" loading="lazy" />`;
+			},
+
+			code: (token) => {
+				let { lang, raw, text, html } = token;
+				const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+				return `<pre><code class="hljs language-${str(lang || 'plaintext')}">${hljs.highlight(text, { language }).value}</code></pre>`;
+			},
+
+			codespan: (token) => {
+				let { lang, raw, text } = token;
+				return `<code class="hljs">${hljs.highlightAuto(text).value}</code>`;
+			},
+
+			// html: (token) => {
+			// 	try{
+			// 		return lib.htmlEscape(token.text);
+			// 	}catch(err){
+			// 		console.error(err);
+			// 	}
+			// 	return '';
+			// },
+		},
+
+		// walkTokens: async (token) => {
+		// 	if(token.type === 'code' && token.lang === 'mermaid'){
+		// 		const { svg } = await mermaid.render('graphDiv', token.text);
+		// 		token.html = `<div class="mermaid">${svg}</div>`;
+		// 	}
+		// },
+	});
+
 	// --- main ---
 
-	self.addEventListener('message', (event) => {
+	self.addEventListener('message', async (event) => {
 		// 主线程发送的数据通过 event.data 访问
 		const { type, data, id } = event.data;
 
@@ -56,7 +81,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 
 		// 渲染 Markdown
 		if (type === 'renderMarkdown') {
-			const html = marked.parse(data);
+			const html = await marked.parse(data);
 			send(html);
 		}
 

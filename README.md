@@ -56,8 +56,8 @@
 - [Highlight.js](https://github.com/highlightjs/highlight.js) - 代码高亮
 - [KaTeX](https://github.com/KaTeX/KaTeX) - LaTeX 公式渲染
 - [Marked](https://github.com/markedjs/marked) - Markdown 文档渲染
-- [MarkedHighlight](https://github.com/markedjs/marked-highlight) - Markdown 代码高亮
 - [MarkedKatex](https://github.com/UziTech/marked-katex-extension) - Markdown LaTeX 公式渲染
+- [mermaid](https://github.com/mermaid-js/mermaid) - 图表渲染
 - [Morphdom](https://github.com/patrick-steele-idem/morphdom) - DOM 差异更新
 
 ## 字体

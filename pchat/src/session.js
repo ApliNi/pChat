@@ -155,7 +155,7 @@ export const switchSession = async (id) => {
 		const msg = tmp.messages[i];
 		const count = tmp.messages.length - i;
 
-		await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: count < visibleMsgs || cssAnimation });
+		await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: false });
 		if(count < visibleMsgs || cssAnimation) chatScrollToBottom(true);
 
 		// 如果渲染过程中切换会话则停止

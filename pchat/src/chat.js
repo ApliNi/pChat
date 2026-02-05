@@ -1,4 +1,5 @@
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.3.1/+esm';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.12.2/+esm';
 import { historyList, messageArea, sidebarToggle } from "./dom.js";
 import { worker } from './worker.js';
 import { scrollToBottom, toggleSessionPin, vibrate } from './util.js';
@@ -43,13 +44,18 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 	}
 });
 
-// 所有图片懒加载
-DOMPurify.addHook('afterSanitizeElements', (node) => {
-	if (node.tagName === 'IMG') {
-		node.setAttribute('loading', 'lazy');
-		node.classList.add('img-node');
-	}
-	return node;
+mermaid.initialize({
+	startOnLoad: false,
+	theme: 'dark',
+	themeVariables: {
+		fontFamily: 'JetBrainsMono, HarmonyOS, Trebuchet MS, Segoe UI Emoji',
+		primaryTextColor: '#adb4bc',
+		pie1: '#0099ff',
+		pie2: '#ff9900',
+		pie3: '#ff3333',
+		pieStrokeWidth: '0px',
+		pieOuterStrokeWidth: '0px',
+	},
 });
 
 
@@ -165,6 +171,8 @@ export const appendMsgDOM = async ({
 	}else{
 		messageArea.prepend(msgDiv);
 	}
+	
+	await renderContentDOM(contentArea);
 
 	addMinimapItem(role, id, isCollapsed, fromTopToBottom);
 
@@ -330,6 +338,17 @@ export const renderContent = async (content, renderHTML = true) => {
 		return DOMPurify.sanitize(await worker.run('renderMarkdown', fullText), DOMPurifyConfig);
 	}else{
 		return fullText;
+	}
+};
+
+export const renderContentDOM = async (contentArea) => {
+	
+	const mermaidNodes = contentArea.querySelectorAll('.language-mermaid:not(.rendered)');
+	if(mermaidNodes.length){
+		for(const node of mermaidNodes){
+			node.classList.add('rendered');
+		}
+		await mermaid.run({ nodes: mermaidNodes });
 	}
 };
 

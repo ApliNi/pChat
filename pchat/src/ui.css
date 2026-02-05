@@ -876,6 +876,12 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 }
 .markdown-body input[type="checkbox"]:checked { border: 6px double var(--meta-color); }
 
+.markdown-body .language-mermaid[data-processed="true"] {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
 /* 最后一个元素不添加 margin-bottom */
 .markdown-body > *:last-child,
 .markdown-body ul > li:last-child,

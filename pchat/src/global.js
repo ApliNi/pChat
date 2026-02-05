@@ -1,9 +1,9 @@
 import { aiService } from "./aiService.js";
-import { appendMsgDOM, removeMinimapItem, renderContent, updateHistoryContent } from "./chat.js";
+import { appendMsgDOM, removeMinimapItem, renderContent, renderContentDOM, updateHistoryContent } from "./chat.js";
 import { saveCurrentSession } from './session.js';
 import { tmp } from "./config.js";
 import { IDBManager } from "./db.js";
-import { userInput } from "./dom.js";
+import { modelSelect, userInput } from "./dom.js";
 import { generateId, generateSessionId, handleSend, renderImagePreviews } from "./util.js";
 import { switchSession } from './session.js';
 import { saveSessionMetaLocal } from './session.js';
@@ -30,7 +30,7 @@ window.toggleMessageView = async function(id) {
 	const msgDiv = document.getElementById(id);
 	if (!msgDiv) return;
 
-	const contentDiv = msgDiv.querySelector('.content');
+	const contentArea = msgDiv.querySelector('.content');
 	const toggleBtn = msgDiv.querySelector('.btn-toggle');
 	
 	// 获取当前状态
@@ -44,32 +44,33 @@ window.toggleMessageView = async function(id) {
 	if (isRendered) {
 		// === 切换到源码模式 (RAW) ===
 		// 1. 切换内容为纯文本
-		contentDiv.textContent = rawContent;
+		contentArea.textContent = rawContent;
 		// 2. 允许编辑
-		contentDiv.contentEditable = 'plaintext-only';
-		contentDiv.classList.add('editable');
+		contentArea.contentEditable = 'plaintext-only';
+		contentArea.classList.add('editable');
 		// 3. 更新状态标记
 		msgDiv.dataset.rendered = 'false';
 		// 4. 更新按钮文本 (现在显示的是源码，按钮提示用户点击可渲染)
 		toggleBtn.innerText = '[RENDER]';
 		
 		// 稍微高亮一下表示可编辑
-		contentDiv.style.background = 'rgba(255,255,255,0.05)';
-		setTimeout(() => contentDiv.style.background = '', 300);
+		contentArea.style.background = 'rgba(255,255,255,0.05)';
+		setTimeout(() => contentArea.style.background = '', 300);
 
 	} else {
 		// === 切换到渲染模式 (RENDER) ===
 		// 1. 获取当前编辑器里的文本 (用户可能刚刚修改过)
-		const currentRawText = contentDiv.innerText;
+		const currentRawText = contentArea.innerText;
 		// 2. 确保历史记录是最新的
 		if (currentRawText !== rawContent) {
 			await updateHistoryContent(id, currentRawText);
 		}
 		// 3. 渲染 Markdown
-		contentDiv.innerHTML = await renderContent(msgItem.content);
+		contentArea.innerHTML = await renderContent(msgItem.content);
+		await renderContentDOM(contentArea);
 		// 4. 禁止编辑 (渲染后的 HTML 不适合直接编辑)
-		contentDiv.contentEditable = 'false';
-		contentDiv.classList.remove('editable');
+		contentArea.contentEditable = 'false';
+		contentArea.classList.remove('editable');
 		// 5. 更新状态标记
 		msgDiv.dataset.rendered = 'true';
 		// 6. 更新按钮文本

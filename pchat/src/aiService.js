@@ -2,7 +2,7 @@ import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
 import { cfg, tmp } from "./config.js";
 import { modelSelect } from "./dom.js";
 import { generateId, scrollToBottom, toggleState, vibrate } from "./util.js";
-import { appendMsgDOM, renderContent } from './chat.js';
+import { appendMsgDOM, renderContent, renderContentDOM } from './chat.js';
 import { saveCurrentSession } from './session.js';
 
 
@@ -217,17 +217,17 @@ export const aiService = {
 			thisContent = tmp.messages[msgIdx];
 			
 			msgDiv = document.getElementById(msgId);
-			const contentDiv = msgDiv.querySelector('.content');
+			const contentArea = msgDiv.querySelector('.content');
 			const metaDiv = msgDiv.querySelector('.meta-stats');
 			msgDiv.classList.add('isProcessing');
 			msgDiv.dataset.rendered = 'true';
 			msgDiv.querySelector('.btn-toggle').innerText = '[RAW]';
-			contentDiv.contentEditable = 'false'; // 生成时禁止编辑
+			contentArea.contentEditable = 'false'; // 生成时禁止编辑
 
 			msgDiv.querySelector('.role-label span:first-child').innerText = cfg.lastModel.toUpperCase();
 			
-			contentDiv.textContent = '';
-			uiElements = { contentDiv, metaDiv, msgDiv, };
+			contentArea.textContent = '';
+			uiElements = { contentArea, metaDiv, msgDiv, };
 		} else {
 			contentHistory = [...tmp.messages];
 			msgId = generateId();
@@ -307,7 +307,7 @@ export const aiService = {
 
 				// 渲染新内容
 				const htmlContent = await renderContent([ textItem ]);
-				morphdom(uiElements.contentDiv, `<div>${htmlContent}</div>`, {
+				morphdom(uiElements.contentArea, `<div>${htmlContent}</div>`, {
 					childrenOnly: true,
 					onBeforeElUpdated: (from, to) => {
 						// 如果节点内容完全一致, 直接跳过更新
@@ -328,7 +328,7 @@ export const aiService = {
 				});
 
 				// 处理思考框折叠
-				const thinkEl = uiElements.contentDiv.querySelector('.think.__pChat__');
+				const thinkEl = uiElements.contentArea.querySelector('.think.__pChat__');
 				if(thinkEl){
 					if(part.reasoning && think === 0){
 						think = 1;
@@ -342,6 +342,8 @@ export const aiService = {
 				
 				scrollToBottom();
 			}
+			
+			await renderContentDOM(uiElements.contentArea);
 
 			// 传输结束后的统计
 			clearInterval(timerInterval);
@@ -372,8 +374,8 @@ export const aiService = {
 				uiElements.metaDiv.style.color = '#ffcc33';
 			} else {
 				console.error(err);
-				uiElements.contentDiv.innerHTML += `<br />`;
-				uiElements.contentDiv.textContent += `[SYSTEM ERROR]: ${err.message}`;
+				uiElements.contentArea.innerHTML += `<br />`;
+				uiElements.contentArea.textContent += `[SYSTEM ERROR]: ${err.message}`;
 				uiElements.metaDiv.innerText = `FAIL`;
 				uiElements.metaDiv.style.color = '#ff3333';
 			}
