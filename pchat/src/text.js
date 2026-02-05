@@ -74,3 +74,13 @@ export const introSessionText = `
 注意: 这个欢迎会话始终自动重置.
 > 点击左上角 \`[ + NEW SESSION ]\` 创建一个新会话.
 `.trim();
+
+export const defaultSystemPrompt = `
+## Format
+- All block tokens should have a blank line before and after them.
+- Use \`$$ ... $$\` to display a block-level LaTeX formula.
+- Use code blocks to write mermaid charting, note that the client uses dark colors
+- Use \`[Hello](#/user_send)\`, After the user clicks, it will automatically send \`Hello\`
+---
+You are a helpful coding assistant. Answer concisely.
+`.trim();

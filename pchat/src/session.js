@@ -126,55 +126,62 @@ export const switchSession = async (id) => {
 	}
 
 	// 滚动到底部
-	const chatScrollToBottom = () => {
+	const chatScrollToBottom = (force) => {
 		// 欢迎会话不滚动到底部
 		if (id !== 'sess_welcome') {
-			scrollToBottom(true);
+			scrollToBottom(force);
 		}
 	};
 
 	renderSidebar(true);
 	vibrate(25);
 
-	// messageArea.style.display = 'none';
 	messageArea.innerHTML = '';
 	rightPanel.scrollTop = 0; // 防止继承上一个聊天的滚动位置
 	minimap.style.display = 'none';
 	minimap.innerHTML = '';
 
-	let cssAnimation = true;
-	setTimeout(() => {
-		cssAnimation = false;
-	}, 700);
-
 	// 假设可视范围最多容纳 n 条消息
 	const visibleMsgs = 20;
 
-	// 逆向遍历 tmp.chatHistory
-	for (let i = tmp.messages.length - 1; i >= 0; i--) {
-		const msg = tmp.messages[i];
-		const count = tmp.messages.length - i;
+	if(tmp.messages.length > visibleMsgs){
 
-		await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: false });
-		if(count < visibleMsgs || cssAnimation) chatScrollToBottom(true);
+		let cssAnimation = true;
+		setTimeout(() => {
+			cssAnimation = false;
+		}, 1000);
 
-		// 如果渲染过程中切换会话则停止
-		if(nowSessionId !== switchSessionLock) break;
+		// 逆向遍历 tmp.messages
+		for (let i = tmp.messages.length - 1; i >= 0; i--) {
+			const msg = tmp.messages[i];
+			const count = tmp.messages.length - i;
 
-		// 延迟渲染避免卡顿
-		await new Promise((resolve) => requestAnimationFrame(resolve));
+			await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: false });
+			if(cssAnimation) chatScrollToBottom(count < visibleMsgs);
+
+			// 延迟渲染避免卡顿
+			await new Promise((resolve) => requestAnimationFrame(resolve));
+			if(cssAnimation) chatScrollToBottom(count < visibleMsgs);
+
+			// 如果渲染过程中切换会话则停止
+			if(nowSessionId !== switchSessionLock) break;
+		}
+	}else{
+		messageArea.style.opacity = 0;
+		for (const msg of tmp.messages) {
+			await appendMsgDOM({ ...msg, animate: false });
+		}
+		messageArea.style.opacity = 1;
+		for(let i = 3; i > 0; i--){
+			chatScrollToBottom(true);
+			await new Promise((resolve) => requestAnimationFrame(resolve));
+		}
 	}
 
 	minimap.style.display = 'flex';
 	scrollToMinimapBottom();
 
 	switchSessionLock = '';
-
-	// for (const msg of tmp.chatHistory) {
-	// 	const els = await appendMsgDOM({ ...msg, animate: false });
-	// }
-
-	// messageArea.style.display = 'flex';
 };
 
 export const renderSidebar = async (onlyHighlight = false, scrollIntoViewBlock = 'center') => {

@@ -2,6 +2,7 @@ import { aiService } from "../aiService.js";
 import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
 import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList } from '../dom.js';
+import { defaultSystemPrompt } from '../text.js';
 
 
 // 加载配置页面内容
@@ -26,13 +27,7 @@ document.querySelector('#config .content').innerHTML = `
 
 <h2>会话</h2>
 <p>默认系统提示词, 清空后跟随软件自动更新</p>
-<pre id="defaultSystemPromptInput" contenteditable="plaintext-only">## Format
-- All block tokens should have a blank line before and after them.
-- Use \`$$ ... $$\` to display a block-level LaTeX formula.
-- Use code blocks to write mermaid charting, note that the client uses dark colors
-- Use \`[Hello](#/user_send)\`, After the user clicks, it will automatically send \`Hello\`
----
-You are a helpful coding assistant. Answer concisely.</pre>
+<pre id="defaultSystemPromptInput" contenteditable="plaintext-only">${defaultSystemPrompt}</pre>
 
 
 <h2>模型</h2>
