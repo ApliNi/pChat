@@ -179,7 +179,7 @@ export const appendMsgDOM = async ({
 	if(animate) scrollToBottom();
 
 	return {
-		contentDiv: contentArea,
+		contentArea: contentArea,
 		metaDiv: msgDiv.querySelector('.meta-stats'),
 		msgDiv: msgDiv,
 	};

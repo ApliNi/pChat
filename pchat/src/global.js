@@ -87,13 +87,13 @@ window.toggleMessageCollapse = async function(id, btn) {
 	const msgDiv = document.getElementById(id);
 	if (!msgDiv) return;
 	
-	const contentDiv = msgDiv.querySelector('.content');
+	const contentArea = msgDiv.querySelector('.content');
 	
 	// 切换 collapsed 类
-	contentDiv.classList.toggle('collapsed');
+	contentArea.classList.toggle('collapsed');
 	
 	const msgItem = tmp.messages.find(m => m.id === id);
-	msgItem.isCollapsed = contentDiv.classList.contains('collapsed');
+	msgItem.isCollapsed = contentArea.classList.contains('collapsed');
 
 	btn.innerText = msgItem.isCollapsed ? '[+]' : '[-]';
 	btn.dataset.isCollapsed = msgItem.isCollapsed;
@@ -139,7 +139,7 @@ window.regenerateResponseTo = async function(id) {
 
 		// 2. 创建 DOM 元素
 		// 先通过 appendMsgDOM 创建（默认会加到最后）
-		appendMsgDOM(newMsgObj);
+		await appendMsgDOM(newMsgObj);
 		
 		// 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素之后)
 		const userDiv = document.getElementById(id);
