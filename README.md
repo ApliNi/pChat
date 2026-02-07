@@ -75,3 +75,19 @@
 - [x] 导入导出
 - [x] 置顶显示
 - [x] 标准模型服务
+
+## 构建_使用
+
+**对于本地运行**
+
+打开 `./pchat/index.html` 文件即可.
+
+**CloudFlare Pages**
+
+选择以下一种方法:
+1. 点击 Fork 按钮, 在 CloudFlare Pages 页面创建项目选择此存储库.
+2. 下载存储库压缩包, 在 CloudFlare Pages 页面创建项目上传压缩包.
+
+设置构建配置:
+- 构建命令: `node build.mjs`
+- 部署命令: `npx wrangler deploy --assets=./pchat --compatibility-date 2025-12-17`
