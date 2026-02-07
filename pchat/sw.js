@@ -2,14 +2,11 @@
 const CACHE_NAME = 'v2';
 const resMap = {};
 
-let cache = null;
-
 self.addEventListener('install', async (event) => {
 	self.skipWaiting();
 });
 
 self.addEventListener('activate', async (event) => {
-	cache = await caches.open(CACHE_NAME);
 	const keys = await caches.keys();
 	return Promise.all(keys.map(key => key !== CACHE_NAME && caches.delete(key)));
 });
@@ -27,6 +24,7 @@ self.addEventListener('fetch', (event) => {
 	event.respondWith((async () => {
 		resMap[event.request.url] = event.request;
 		
+		const cache = await caches.open(CACHE_NAME);
 		let res = await cache.match(event.request);
 		if(res){
 			// 异步更新缓存
@@ -63,7 +61,7 @@ self.addEventListener('fetch', (event) => {
 		if(ver && newVer && ver !== newVer){
 			ver = newVer;
 			console.log('[sw.js] cache ver changed, refreshing cache...');
-
+			const cache = await caches.open(CACHE_NAME);
 			for(const url in resMap){
 				const request = resMap[url];
 				const res = await fetch(request).catch(Response.error);
