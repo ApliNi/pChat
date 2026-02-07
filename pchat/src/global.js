@@ -3,7 +3,7 @@ import { appendMsgDOM, removeMinimapItem, renderContent, renderContentDOM, updat
 import { saveCurrentSession } from './session.js';
 import { tmp } from "./config.js";
 import { IDBManager } from "./db.js";
-import { modelSelect, userInput } from "./dom.js";
+import { messageArea, modelSelect, userInput } from "./dom.js";
 import { generateId, generateSessionId, handleSend, renderImagePreviews } from "./util.js";
 import { switchSession } from './session.js';
 import { saveSessionMetaLocal } from './session.js';
@@ -139,7 +139,7 @@ window.regenerateResponseTo = async function(id) {
 
 		// 2. 创建 DOM 元素
 		// 先通过 appendMsgDOM 创建（默认会加到最后）
-		const { messageArea } = await appendMsgDOM(newMsgObj);
+		await appendMsgDOM(newMsgObj);
 		
 		// 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素之后)
 		const userDiv = document.getElementById(id);
