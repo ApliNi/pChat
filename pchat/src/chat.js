@@ -53,8 +53,8 @@ mermaid.initialize({
 		pie1: '#0099ff',
 		pie2: '#ff9900',
 		pie3: '#ff3333',
-		pieStrokeWidth: '0px',
-		pieOuterStrokeWidth: '0px',
+		// pieStrokeWidth: '0px',
+		// pieOuterStrokeWidth: '0px',
 	},
 });
 

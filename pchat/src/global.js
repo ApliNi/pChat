@@ -139,7 +139,7 @@ window.regenerateResponseTo = async function(id) {
 
 		// 2. 创建 DOM 元素
 		// 先通过 appendMsgDOM 创建（默认会加到最后）
-		await appendMsgDOM(newMsgObj);
+		const { messageArea } = await appendMsgDOM(newMsgObj);
 		
 		// 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素之后)
 		const userDiv = document.getElementById(id);
