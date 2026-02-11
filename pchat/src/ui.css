@@ -660,6 +660,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 ::-webkit-scrollbar-thumb { background: #333; }
 ::-webkit-scrollbar-thumb:hover { background: #555; cursor: default; }
 ::-webkit-scrollbar-corner { background: #333; }
+::-webkit-resizer { margin: 0; /* 抑制空规则集警告 */ }
 
 ::selection { background: #34beff33; }
 
@@ -851,11 +852,13 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	border: 1px solid var(--border-color);
 	padding: 10px;
 	border-radius: 0px;
-	overflow-x: auto;
-	overflow-y: auto;
 	margin: 0.8em 0;
-	max-height: 444px;
 	outline: none;
+	resize: vertical;
+	overflow: auto;
+}
+.markdown-body pre:not([style*="height"]) {
+	max-height: 444px;
 }
 
 .markdown-body pre code {
@@ -880,6 +883,10 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	display: flex;
 	justify-content: center;
 	align-items: center;
+}
+
+.markdown-body .katex-display {
+	margin: 0.25em 0 !important;
 }
 
 /* 最后一个元素不添加 margin-bottom */
