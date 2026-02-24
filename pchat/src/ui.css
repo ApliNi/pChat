@@ -1155,10 +1155,20 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	font-size: 14px;
 }
 .search-result-snippet mark, .search-result-title mark {
-	background: rgba(0, 143, 255, 0.2);
+	background: rgba(255, 255, 255, 0.15);
 	color: #fff;
 	padding: 0 4px;
+	border-radius: 2px;
 }
+.loading-more {
+	text-align: center;
+	font-size: 11px;
+	color: #555;
+	padding: 20px 0;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
 
 
 #image {

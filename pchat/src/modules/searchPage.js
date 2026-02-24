@@ -21,6 +21,11 @@ const searchResultsList = document.getElementById('search-results-list');
 let rightPanelScrollTop = 0;
 let isDeepSearch = false;
 
+// 分页相关变量
+let allResults = [];
+let displayedCount = 0;
+const PAGE_SIZE = 200;
+
 // 切换搜索界面
 searchBtn.addEventListener('click', async () => {
 	searchBtn.classList.toggle('open');
@@ -120,13 +125,24 @@ const performSearch = async (deep = false) => {
 };
 
 const renderResults = (results, query) => {
+	allResults = results;
+	displayedCount = 0;
+	searchResultsList.innerHTML = '';
+	
 	if(results.length === 0){
 		searchResultsList.innerHTML = '<p>No results found</p>';
 		return;
 	}
 
-	searchResultsList.innerHTML = '';
-	results.forEach(res => {
+	loadMoreResults(query);
+};
+
+const loadMoreResults = (query) => {
+	const nextBatch = allResults.slice(displayedCount, displayedCount + PAGE_SIZE);
+	if (nextBatch.length === 0) return;
+
+	const fragment = document.createDocumentFragment();
+	nextBatch.forEach(res => {
 		const div = document.createElement('div');
 		div.className = 'search-result-item';
 		
@@ -152,9 +168,37 @@ const renderResults = (results, query) => {
 			switchSession(res.id);
 		});
 
-		searchResultsList.appendChild(div);
+		fragment.appendChild(div);
 	});
+
+	searchResultsList.appendChild(fragment);
+	displayedCount += nextBatch.length;
+
+	// 如果还有更多，添加加载提示（可选）
+	if (displayedCount < allResults.length) {
+		const moreLabel = document.createElement('p');
+		moreLabel.className = 'loading-more';
+		moreLabel.textContent = `Scroll to load more (${displayedCount}/${allResults.length})`;
+		searchResultsList.appendChild(moreLabel);
+	}
 };
+
+// 监听滚动加载
+rightPanel.addEventListener('scroll', () => {
+	if (!searchBtn.classList.contains('open')) return;
+	
+	const { scrollTop, scrollHeight, clientHeight } = rightPanel;
+	// 距离底部 500px 时开始加载
+	if (scrollTop + clientHeight >= scrollHeight - 500) {
+		// 移除之前的加载提示
+		const oldLabel = searchResultsList.querySelector('.loading-more');
+		if (oldLabel) oldLabel.remove();
+
+		if (displayedCount < allResults.length) {
+			loadMoreResults(searchInput.value.trim().toLowerCase());
+		}
+	}
+});
 
 searchInput.addEventListener('input', () => performSearch(isDeepSearch));
 searchDeepBtn.addEventListener('click', () => {
