@@ -78,9 +78,10 @@ sendBtn.addEventListener('click', () => {
 
 // 监听滚动事件：碰到底部设为 true，离开底部设为 false
 rightPanel.addEventListener('scroll', () => {
-	const threshold = 20;
+	const threshold = 5;
 	// 判断当前滚动位置是否在底部
-	tmp.isAutoScroll = rightPanel.scrollTop + rightPanel.clientHeight >= rightPanel.scrollHeight - threshold;
+	tmp.isAutoScroll = (rightPanel.scrollTop + rightPanel.clientHeight) >= (rightPanel.scrollHeight - threshold);
+	
 });
 
 // 判断用户是否与网页交互过

@@ -136,15 +136,20 @@ export const switchSession = async (id) => {
 	renderSidebar(true);
 	vibrate(25);
 
+	messageArea.classList.add('loading');
 	messageArea.innerHTML = '';
 	rightPanel.scrollTop = 0; // 防止继承上一个聊天的滚动位置
 	minimap.style.display = 'none';
 	minimap.innerHTML = '';
 
 	// 假设可视范围最多容纳 n 条消息
-	const visibleMsgs = 20;
+	const visibleMsgs = 15;
 
-	if(tmp.messages.length > visibleMsgs){
+	if(tmp.messages.length === 0){
+		messageArea.innerHTML = '<p>Message list is empty</p>';
+	}
+
+	if(tmp.messages.length > visibleMsgs || false){
 
 		let cssAnimation = true;
 		setTimeout(() => {
@@ -156,30 +161,34 @@ export const switchSession = async (id) => {
 			const msg = tmp.messages[i];
 			const count = tmp.messages.length - i;
 
-			await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: false, animate: false });
+			await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: true, animate: false });
 			if(cssAnimation) chatScrollToBottom(count < visibleMsgs);
 
 			// 延迟渲染避免卡顿
 			await new Promise((resolve) => requestAnimationFrame(resolve));
 			if(cssAnimation) chatScrollToBottom(count < visibleMsgs);
 
+			if(count === visibleMsgs) messageArea.classList.remove('loading');
+
 			// 如果渲染过程中切换会话则停止
 			if(nowSessionId !== switchSessionLock) break;
 		}
 	}else{
-		messageArea.style.opacity = 0;
 		for (const msg of tmp.messages) {
 			await appendMsgDOM({ ...msg, animate: false });
+			chatScrollToBottom(true);
 		}
-		messageArea.style.opacity = 1;
+		messageArea.classList.remove('loading');
 		for(let i = 3; i > 0; i--){
 			chatScrollToBottom(true);
 			await new Promise((resolve) => requestAnimationFrame(resolve));
 		}
 	}
 
-	minimap.style.display = 'flex';
-	scrollToMinimapBottom();
+	if(nowSessionId === switchSessionLock){
+		minimap.style.display = 'flex';
+		scrollToMinimapBottom();
+	}
 
 	switchSessionLock = '';
 };

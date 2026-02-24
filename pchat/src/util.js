@@ -51,7 +51,7 @@ export const scrollToBottom = (force = false, delay = 0) => {
 		setTimeout(() => { scrollToBottom(force); }, delay);
 		return;
 	}
-	rightPanel.scrollTop = rightPanel.scrollHeight + 9999;
+	rightPanel.scrollTop = rightPanel.scrollHeight;
 }
 
 export const updateTitle = async (_title) => {

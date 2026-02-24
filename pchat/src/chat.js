@@ -69,7 +69,7 @@ export const appendMsgDOM = async ({
 	isCollapsed = false,
 	isRaw = undefined,
 	display = '',
-	fromTopToBottom = true,
+	fromTopToBottom = false,
 }) => {
 	const msgDiv = document.createElement('div');
 	msgDiv.className = `message ${role}`;
@@ -172,9 +172,9 @@ export const appendMsgDOM = async ({
 		messageArea.prepend(msgDiv);
 	}
 	
-	await renderContentDOM(contentArea);
+	renderContentDOM(contentArea);
 
-	addMinimapItem(role, id, isCollapsed, fromTopToBottom);
+	addMinimapItem(role, id, isCollapsed, !fromTopToBottom);
 
 	if(animate) scrollToBottom();
 
@@ -183,6 +183,18 @@ export const appendMsgDOM = async ({
 		metaDiv: msgDiv.querySelector('.meta-stats'),
 		msgDiv: msgDiv,
 	};
+};
+
+export const renderContentDOM = async (contentArea) => {
+	
+	const mermaidNodes = contentArea.querySelectorAll('.language-mermaid:not(.rendered)');
+	if(mermaidNodes.length){
+		for(const node of mermaidNodes){
+			node.classList.add('rendered');
+		}
+		await mermaid.run({ nodes: mermaidNodes }).catch(err => console.error(err));
+		scrollToBottom();
+	}
 };
 
 // --- 点击事件委托 ---
@@ -338,17 +350,6 @@ export const renderContent = async (content, renderHTML = true) => {
 		return DOMPurify.sanitize(await worker.run('renderMarkdown', fullText), DOMPurifyConfig);
 	}else{
 		return fullText;
-	}
-};
-
-export const renderContentDOM = async (contentArea) => {
-	
-	const mermaidNodes = contentArea.querySelectorAll('.language-mermaid:not(.rendered)');
-	if(mermaidNodes.length){
-		for(const node of mermaidNodes){
-			node.classList.add('rendered');
-		}
-		await mermaid.run({ nodes: mermaidNodes }).catch(err => console.error(err));
 	}
 };
 

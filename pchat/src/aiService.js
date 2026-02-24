@@ -237,6 +237,7 @@ export const aiService = {
 				id: msgId,
 				model: cfg.lastModel,
 				stats: '',
+				fromTopToBottom: false,
 			};
 			tmp.messages.push(thisContent);
 			msgIdx = tmp.messages.length - 1;

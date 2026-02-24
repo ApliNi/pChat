@@ -322,9 +322,20 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	flex: 1;
 	padding: 20px 20px 0px 20px;
 	display: flex;
-	flex-direction: column;
+	flex-direction: column-reverse;
+	justify-content: flex-end;
 	gap: 20px;
 	scroll-target-group: auto;
+	opacity: 1;
+	transition: all 0.2s;
+}
+.message-area.loading {
+	opacity: 0;
+	max-height: 0;
+	transition: none;
+	& > .message {
+		max-height: 0;
+	}
 }
 
 .message {
@@ -906,7 +917,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 .markdown-body .language-mermaid[data-processed="true"] {
 	display: flex;
 	justify-content: center;
-	align-items: center;
+	align-items: flex-start;
 }
 
 .markdown-body .katex-display {
