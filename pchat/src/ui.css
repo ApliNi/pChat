@@ -1087,9 +1087,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 #sidebar #history-list {
 	transition: opacity 0.2s;
 }
-#sidebar.open-config .sidebar-header,
 #sidebar.open-config #history-list,
-#sidebar.open-search .sidebar-header,
 #sidebar.open-search #history-list {
 	opacity: 0.6;
 }
@@ -1141,12 +1139,6 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	background: rgba(255, 255, 255, 0.03);
 	border-color: #444;
 }
-.search-result-title {
-	font-weight: bold;
-	color: #ccc;
-	margin-bottom: 5px;
-	font-size: 14px;
-}
 .search-result-snippet {
 	font-size: 12px;
 	color: #777;
@@ -1155,12 +1147,18 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	text-overflow: ellipsis;
 	font-family: var(--font-stack);
 }
-.search-result-snippet mark {
+.search-result-title {
+	font-weight: bold;
+	color: #777;
+	margin-bottom: 5px;
+	font-size: 14px;
+}
+.search-result-snippet mark, .search-result-title mark {
 	background: rgba(0, 143, 255, 0.2);
 	color: #fff;
-	padding: 0 2px;
-	border-radius: 2px;
+	padding: 0 4px;
 }
+
 
 #image {
 
