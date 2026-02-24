@@ -1,7 +1,7 @@
 import { aiService } from "../aiService.js";
 import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
-import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList } from '../dom.js';
+import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, configBtn, searchBtn, messageArea, inputContainer } from '../dom.js';
 import { defaultSystemPrompt } from '../text.js';
 
 
@@ -65,7 +65,6 @@ document.querySelector('#config .content').innerHTML = `
 </details>
 `;
 
-const configBtn = document.getElementById('config-btn');
 const importBtn = document.getElementById('import-btn');
 const exportBtn = document.getElementById('export-btn');
 const exportCurrentSessionBtn = document.getElementById('export-current-session-btn');
@@ -195,13 +194,17 @@ let rightPanelScrollTop = 0;
 configBtn.addEventListener('click', async () => {
 	configBtn.classList.toggle('open');
 	if(configBtn.classList.contains('open')){
+		// 关闭搜索页面（如果打开了）
+		if(searchBtn.classList.contains('open')) searchBtn.click();
+
 		sidebar.classList.add('open-config');
 		rightPanelScrollTop = rightPanel.scrollTop;
+
 
 		// 重新填充默认提示词
 		defaultSystemPromptInput.textContent = cfg.defaultSystemPrompt;
 
-		for(const e of rightPanel.querySelectorAll('& > *')){
+		for(const e of [messageArea, inputContainer]){
 			e.style.display = 'none';
 		}
 		minimap.style.display = 'none';
@@ -210,7 +213,7 @@ configBtn.addEventListener('click', async () => {
 		rightPanel.querySelector('& > .config').style.display = '';
 	}else{
 		sidebar.classList.remove('open-config');
-		for(const e of rightPanel.querySelectorAll('& > *')){
+		for(const e of [messageArea, inputContainer]){
 			e.style.display = '';
 		}
 		minimap.style.display = '';

@@ -29,8 +29,10 @@ if(true){
 	await import('./modules/configPage.js');
 	await import('./modules/openImg.js');
 	await import('./modules/pipWindow.js');
+	await import('./modules/searchPage.js');
 
 	// 推迟加载公式字体
+
 	const fontLink = document.createElement('link');
 	fontLink.rel = 'stylesheet';
 	fontLink.href = 'https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css';

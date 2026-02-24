@@ -28,9 +28,13 @@
 			<aside id="sidebar">
 				<div class="sidebar-header">
 					<button id="new-chat-btn">[ + NEW SESSION ]</button>
+					<button id="search-btn" title="Search">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+					</button>
 				</div>
 				<div id="history-list"></div>
 				<div class="sidebar-footer">
+
 					<button id="config-btn" style="flex: 0.4;">CONFIG</button>
 					<button id="pip-window-btn">PIP</button>
 				</div>
@@ -58,6 +62,16 @@
 						<div class="msg-footer"></div>
 					</div>
 				</div>
+
+				<!-- search -->
+				<div id="search-page" class="message-area config" style="display: none;">
+					<div class="message system" style="margin-bottom: 20px;">
+						<span class="role-label"><span>SEARCH</span></span>
+						<div class="content markdown-body"></div>
+						<div class="msg-footer"></div>
+					</div>
+				</div>
+
 			</main>
 
 			<aside id="minimap"></aside>
