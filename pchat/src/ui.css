@@ -1107,6 +1107,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	font-family: var(--font-stack);
 	font-size: 14px;
 	outline: none;
+	transition: all 0.2s;
 }
 #search-input:focus {
 	border-color: #555;
