@@ -1124,7 +1124,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	transition: all 0.2s;
 	text-transform: uppercase;
 }
-#search-deep-btn:hover {
+#search-deep-btn:hover, #search-deep-btn.active {
 	color: #fff;
 	border-color: #666;
 	background: rgba(255,255,255,0.05);

@@ -19,6 +19,7 @@ const searchDeepBtn = document.getElementById('search-deep-btn');
 const searchResultsList = document.getElementById('search-results-list');
 
 let rightPanelScrollTop = 0;
+let isDeepSearch = false;
 
 // 切换搜索界面
 searchBtn.addEventListener('click', async () => {
@@ -155,8 +156,13 @@ const renderResults = (results, query) => {
 	});
 };
 
-searchInput.addEventListener('input', () => performSearch(false));
-searchDeepBtn.addEventListener('click', () => performSearch(true));
+searchInput.addEventListener('input', () => performSearch(isDeepSearch));
+searchDeepBtn.addEventListener('click', () => {
+	isDeepSearch = !isDeepSearch;
+	searchDeepBtn.classList.toggle('active', isDeepSearch);
+	searchInput.placeholder = isDeepSearch ? "Search all contents..." : "Search titles...";
+	performSearch(isDeepSearch);
+});
 searchInput.addEventListener('keydown', (e) => {
-	if(e.key === 'Enter') performSearch(true);
+	if(e.key === 'Enter') performSearch(isDeepSearch);
 });
