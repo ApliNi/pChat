@@ -374,8 +374,6 @@ export const aiService = {
 				uiElements.metaDiv.style.color = '#ffcc33';
 			} else {
 				console.error(err);
-				uiElements.contentArea.innerHTML += `<br />`;
-				uiElements.contentArea.textContent += `[SYSTEM ERROR]: ${err.message}`;
 				uiElements.metaDiv.innerText = `FAIL`;
 				uiElements.metaDiv.style.color = '#ff3333';
 			}

@@ -348,7 +348,7 @@ export const renderContentDOM = async (contentArea) => {
 		for(const node of mermaidNodes){
 			node.classList.add('rendered');
 		}
-		await mermaid.run({ nodes: mermaidNodes });
+		await mermaid.run({ nodes: mermaidNodes }).catch(err => console.error(err));
 	}
 };
 
