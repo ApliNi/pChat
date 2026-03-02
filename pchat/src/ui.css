@@ -97,23 +97,39 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 
 .header-controls { display: flex; align-items: center; gap: 15px; margin-left: 15px; }
 
-.model-select-wrapper { position: relative; }
-.model-select-wrapper::after {
-	content: '▼'; font-size: 10px; position: absolute; right: 8px; top: 50%;
-	transform: translateY(-50%); pointer-events: none; color: var(--meta-color);
+select {
+	appearance: none;
+	-webkit-appearance: none;
+	background: #0c0c0ce0;
+	color: var(--text-color);
+	border: 1px solid var(--border-color);
+	padding: 4px 25px 4px 10px;
+	font-family: var(--font-stack);
+	font-size: 12px;
+	cursor: pointer;
+	outline: none;
+	border-radius: 0;
+	text-transform: uppercase;
+	width: 100%;
+	min-width: 100px;
+	transition: all 0.3s;
+}
+
+.select-wrapper { position: relative; }
+.select-wrapper::after {
+	content: '[↓]';
+	font-size: 10px;
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+	color: var(--meta-color);
 }
 
 #model-select {
-	appearance: none; -webkit-appearance: none;
-	background: #000; color: var(--text-color);
-	border: 1px solid var(--border-color);
-	padding: 4px 25px 4px 10px;
-	font-family: var(--font-stack); font-size: 12px;
-	cursor: pointer; outline: none; border-radius: 0;
-	text-transform: uppercase;
 	width: 300px;
-	min-width: 100px;
-	transition: all 0.3s;
+	background: transparent;
 }
 #model-select:hover { border-color: #fff; }
 
@@ -909,7 +925,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	border-radius: 0;
 	width: 12px;
 	height: 12px;
-	margin-bottom: -1px !important;
+	margin-bottom: -1.2px !important;
 	border: 2px double var(--meta-color);
 }
 .markdown-body input[type="checkbox"]:checked { border: 6px double var(--meta-color); }
@@ -1012,7 +1028,7 @@ h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; fon
 	gap: 10px;
 }
 
-.config input {
+.config input:not([type="checkbox"]) {
 	appearance: none;
 	-webkit-appearance: none;
 	background: #0c0c0ce0;

@@ -214,6 +214,7 @@ window.forkSession = async function(id) {
 		id: newSessionId,
 		title: newTitle,
 		timestamp: Date.now(),
+		updateTime: Date.now(),
 	};
 
 	// 4. 保存新会话元数据到侧边栏列表

@@ -1,9 +1,6 @@
 import { aiService } from "./aiService.js";
 import { appendMsgDOM } from "./chat.js";
-import { renderSidebar } from './session.js';
-import { switchSession } from './session.js';
-import { updateSessionTitleIfNeeded } from './session.js';
-import { saveCurrentSession } from './session.js';
+import { saveCurrentSession, saveSessionMetaLocal, switchSession, updateSessionTitleIfNeeded } from './session.js';
 import { tmp } from "./config.js";
 import { imagePreviewContainer, rightPanel, sendBtn, statusDot, userInput } from "./dom.js";
 import { IDBManager } from "./db.js";
@@ -36,9 +33,9 @@ export const toggleSessionPin = async (e, sessionId) => {
 	if (session) {
 		session.pinned = !(session.pinned === true);
 		session.timestamp = Date.now(); // 更新时间戳以改变排序
-		await IDBManager.saveSessionMeta(session);
-		renderSidebar();
-
+		session.updateTime = Date.now(); // 标记为已更新
+		await saveSessionMetaLocal(session);
+		
 		// 置顶后切换到该会话
 		await switchSession(sessionId);
 	}

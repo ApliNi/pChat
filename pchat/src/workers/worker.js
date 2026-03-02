@@ -117,9 +117,9 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 			
 			// 添加置顶会话
 			if (pinnedSessions.length > 0) {
-				html += `<details class="history-group pinned-group" open><summary class="history-group-title">PINNED</summary>`;
+				html += /*html*/`<details class="history-group pinned-group" open><summary class="history-group-title">PINNED</summary>`;
 				pinnedSessions.forEach(session => {
-					html += `
+					html += /*html*/`
 						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
 							<div class="history-info">
 								<div class="history-title" title="Double click to rename">${str(session.title) || 'New Session'}</div>
@@ -129,7 +129,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 							<button class="history-btn history-del-btn"></button>
 						</div>`;
 				});
-				html += '</details>';
+				html += /*html*/`</details>`;
 			}
 			
 			// 添加按年-月分组的普通会话
@@ -138,9 +138,9 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 				const groupSessions = groupedSessions[yearMonth];
 				let time = `${yearMonth.split('-')[0]}-` + `${yearMonth.split('-')[1]}`.padStart(2, '0');
 				if(time === '1970-01') time = 'SYSTEM';
-				html += `<details class="history-group" open><summary class="history-group-title">${time}</summary>`;
+				html += /*html*/`<details class="history-group" open><summary class="history-group-title">${time}</summary>`;
 				groupSessions.forEach(session => {
-					html += `
+					html += /*html*/`
 						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
 							<div class="history-info">
 								<div class="history-title" title="Double click to rename">${str(session.title) || 'New Session'}</div>
@@ -150,7 +150,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 							<button class="history-btn history-del-btn"></button>
 						</div>`;
 				});
-				html += '</details>';
+				html += /*html*/`</details>`;
 			});
 			
 			send(html);

@@ -3,10 +3,11 @@ import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
 import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, configBtn, searchBtn, messageArea, inputContainer } from '../dom.js';
 import { defaultSystemPrompt } from '../text.js';
+import { webdavSync } from "./webdavSync.js";
 
 
 // 加载配置页面内容
-document.querySelector('#config .content').innerHTML = `
+document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>数据</h2>
 <p>在这里导入导出数据和配置:
 	<button id="import-btn">[IMPORT]</button>
@@ -28,6 +29,46 @@ document.querySelector('#config .content').innerHTML = `
 <h2>会话</h2>
 <p>默认系统提示词, 清空后跟随软件自动更新</p>
 <pre id="defaultSystemPromptInput" contenteditable="plaintext-only">${defaultSystemPrompt}</pre>
+
+
+<h2>WebDAV 同步</h2>
+<table class="input-config-table">
+	<tr><td>WebDAV URL</td>
+		<td><input id="webdavUrlInput" type="url" placeholder="http://127.0.0.1:5244/dav"></td>
+	</tr>
+	<tr><td>用户名/密码</td>
+		<td style="display: flex; gap: 4px;">
+			<input id="webdavUserInput" type="text" placeholder="username">
+			<input id="webdavPassInput" type="password" placeholder="password">
+		</td>
+	</tr>
+	<tr><td>加密密钥/文件后缀</td>
+		<td style="display: flex; gap: 4px;">
+			<input id="webdavEncryptionKeyInput" type="password" placeholder="留空将上传明文数据">
+			<input id="webdavFileExtInput" type="text" placeholder="json" value="" style="max-width: min-content;">
+		</td>
+	</tr>
+	<tr><td>同步模式</td>
+
+		<td class="select-wrapper">
+			<select id="webdavSyncModeSelect">
+				<option value="sync-latest">同步到最新版本 [双向]</option>
+				<option value="force-upload">强制上传 [本地 -> 远程]</option>
+				<option value="force-download">强制下载 [远程 -> 本地]</option>
+			</select>
+		</td>
+	</tr>
+	<tr><td>同步选项</td>
+		<td>
+			<label><input id="webdavSyncOnStartInput" type="checkbox"> 启动时同步</label>
+		</td>
+	</tr>
+</table>
+<p>
+	<span>目录: <code>./pChat/sync/{日期}/{会话文件}</code></span>
+	<button id="webdav-sync-btn">[RUN_SYNC]</button>
+</p>
+<p id="webdavSyncStatus" style="color: var(--text-color-muted);">同步未开始</p>
 
 
 <h2>模型</h2>
@@ -76,6 +117,16 @@ const openaiApiEndpointInput = document.getElementById('openaiApiEndpointInput')
 const openaiApiKeyInput = document.getElementById('openaiApiKeyInput');
 const openaiApiKeyCount = document.getElementById('openaiApiKeyCount');
 const openaiPriorityModelsInput = document.getElementById('openaiPriorityModelsInput');
+const webdavUrlInput = document.getElementById('webdavUrlInput');
+const webdavUserInput = document.getElementById('webdavUserInput');
+const webdavPassInput = document.getElementById('webdavPassInput');
+const webdavSyncModeSelect = document.getElementById('webdavSyncModeSelect');
+const webdavFileExtInput = document.getElementById('webdavFileExtInput');
+const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInput');
+const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput');
+
+const webdavSyncBtn = document.getElementById('webdav-sync-btn');
+const webdavSyncStatus = document.getElementById('webdavSyncStatus');
 const library = document.querySelector('#config details.library');
 
 let openaiApiModify = false;
@@ -184,6 +235,39 @@ openaiPriorityModelsInput.addEventListener('input', () => {
 	const list = openaiPriorityModelsInput.value.split(/\,|\;|，|；/).map(s => s.trim()).filter(s => s);
 	cfg.setItem('openaiPriorityModels', list);
 	openaiApiModify = true;
+});
+
+// webdav:
+webdavUrlInput.value = cfg.webdavUrl || '';
+webdavUrlInput.addEventListener('input', () => cfg.setItem('webdavUrl', webdavUrlInput.value));
+webdavUserInput.value = cfg.webdavUser || '';
+webdavUserInput.addEventListener('input', () => cfg.setItem('webdavUser', webdavUserInput.value));
+webdavPassInput.value = cfg.webdavPass || '';
+webdavPassInput.addEventListener('input', () => cfg.setItem('webdavPass', webdavPassInput.value));
+
+// webdavSyncMode:
+webdavSyncModeSelect.value = cfg.webdavSyncMode || 'sync-latest';
+webdavSyncModeSelect.addEventListener('change', () => cfg.setItem('webdavSyncMode', webdavSyncModeSelect.value));
+
+// webdavFileExt:
+webdavFileExtInput.value = cfg.webdavFileExt || 'json';
+webdavFileExtInput.addEventListener('input', () => {
+	const ext = webdavFileExtInput.value.replace(/^\.+/, '').trim() || 'json';
+	cfg.setItem('webdavFileExt', ext);
+});
+
+// webdavEncryptionKey:
+webdavEncryptionKeyInput.value = cfg.webdavEncryptionKey || '';
+webdavEncryptionKeyInput.addEventListener('input', () => cfg.setItem('webdavEncryptionKey', webdavEncryptionKeyInput.value));
+
+
+// webdavSyncOnStart:
+webdavSyncOnStartInput.checked = cfg.webdavSyncOnStart === true;
+webdavSyncOnStartInput.addEventListener('change', () => cfg.setItem('webdavSyncOnStart', webdavSyncOnStartInput.checked));
+
+webdavSyncBtn.addEventListener('click', async () => {
+	const mode = webdavSyncModeSelect.value;
+	await webdavSync.sync(mode);
 });
 
 // --- 配置页面 ---

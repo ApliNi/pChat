@@ -11,6 +11,13 @@ export const cfg = {
 	openaiApiEndpoint: '',
 	openaiApiKey: [],
 	openaiPriorityModels: [],
+	webdavUrl: '',
+	webdavUser: '',
+	webdavPass: '',
+	webdavSyncMode: 'sync-latest',
+	webdavSyncOnStart: false,
+	webdavFileExt: 'json',
+	webdavEncryptionKey: '',
 
 	...(await IDBManager.getConfig()),
 	setItem: (id, value) => {

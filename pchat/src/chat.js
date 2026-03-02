@@ -91,12 +91,12 @@ export const appendMsgDOM = async ({
 
 	let regenBtn = '';
 	if (role === 'assistant') {
-		regenBtn = `<button class="action-btn destroy-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
+		regenBtn = /*html*/`<button class="action-btn destroy-btn btn-regen" onclick="regenerateMessage('${id}')">[REGEN]</button>`;
 	} else if (role === 'user') {
-		regenBtn = `<button class="action-btn destroy-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
+		regenBtn = /*html*/`<button class="action-btn destroy-btn btn-regen" onclick="regenerateResponseTo('${id}')">[REGEN]</button>`;
 	}
 
-	let buttonsHtml = `
+	let buttonsHtml = /*html*/`
 		<div class="left-actions">
 			${regenBtn}
 			<button class="action-btn destroy-btn btn-fork" onclick="forkSession('${id}')">[FORK]</button>
@@ -104,7 +104,7 @@ export const appendMsgDOM = async ({
 		</div>
 	`;
 
-	msgDiv.innerHTML = `
+	msgDiv.innerHTML = /*html*/`
 		<span class="role-label">
 			<span>${displayLabel}</span>
 			<div class="role-header-right">
@@ -137,7 +137,7 @@ export const appendMsgDOM = async ({
 	// 始终渲染所有图片
 	for(const item of contentArray){
 		if(item.type === 'image_url'){
-			previewContentArea.innerHTML += `
+			previewContentArea.innerHTML += /*html*/`
 				<div id="${item.id}" class="preview-item">
 					<img src="${item.image_url.url}" loading="lazy" class="img-node">
 					<span class="file-info">${item.name}</span>
@@ -340,7 +340,7 @@ export const renderContent = async (content, renderHTML = true) => {
 	for(const item of content){
 		if(item.type === 'text'){
 			if(item.reasoning && renderHTML){
-				fullText += `<details class="think __pChat__"><summary>[THINK]</summary>\n\n${item.reasoning}\n\n</details>\n\n`;
+				fullText += /*html*/`<details class="think __pChat__"><summary>[THINK]</summary>\n\n${item.reasoning}\n\n</details>\n\n`;
 			}
 			fullText += item.text;
 		}

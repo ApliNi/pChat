@@ -10,9 +10,18 @@ import { worker } from "./worker.js";
 export const saveCurrentSession = async () => {
 	if (!cfg.lastSessionId) return;
 	await IDBManager.saveSessionMessages(cfg.lastSessionId, tmp.messages);
+	// 更新会话的最后修改时间
+	const session = tmp.sessions.find(s => s.id === cfg.lastSessionId);
+	if (session) {
+		session.updateTime = Date.now();
+		await saveSessionMetaLocal(session, false);
+	}
 };
 
 export const saveSessionMetaLocal = async (session, _renderSidebar = true) => {
+	// 确保有更新时间
+	if (!session.updateTime) session.updateTime = session.timestamp || Date.now();
+	
 	// Find if exists and update, or push
 	const idx = tmp.sessions.findIndex(s => s.id === session.id);
 	if (idx !== -1) {
@@ -52,6 +61,7 @@ export const createNewSession = async () => {
 		id: newId,
 		title: '',
 		timestamp: Date.now(),
+		updateTime: Date.now(),
 		pinned: false,
 	};
 
@@ -81,8 +91,10 @@ export const createIntroSession = async () => {
 		id: 'sess_welcome', // 固定 ID
 		title: 'Welcome 👋',
 		timestamp: 0,
+		updateTime: 0,
 		pinned: false,
 	};
+
 
 	// 2. 定义预设的聊天记录
 	const introMessages = [
@@ -212,7 +224,8 @@ export const renameSession = async (e, sessionId, newTitle) => {
 	const session = tmp.sessions.find(s => s.id === sessionId);
 	if (session) {
 		session.title = newTitle;
-		await IDBManager.saveSessionMeta(session);
+		session.updateTime = Date.now();
+		await saveSessionMetaLocal(session, false);
 	}
 };
 

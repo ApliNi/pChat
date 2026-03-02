@@ -20,6 +20,7 @@ import { createIntroSession } from './session.js';
 import { createNewSession } from './session.js';
 import { aiService } from './aiService.js';
 import { modelSelect } from './dom.js';
+import { webdavSync } from './modules/webdavSync.js';
 
 if(true){
 
@@ -50,6 +51,14 @@ if(true){
 	// 从数据库加载所有会话列表
 	tmp.sessions = await IDBManager.getAllSessions();
 	renderSidebar();
+
+	// 启动时同步 WebDAV
+	if (cfg.webdavSyncOnStart && cfg.webdavUrl && cfg.webdavUser && cfg.webdavPass) {
+		console.log('[WebDAV] Starting background sync...');
+		webdavSync.sync(cfg.webdavSyncMode).catch(err => {
+			console.error('[WebDAV] Background sync failed:', err);
+		});
+	}
 
 	// 检查上一次的会话 ID 是否还存在于当前的会话列表中
 	if (tmp.sessions.some(s => s.id === cfg.lastSessionId)) {
