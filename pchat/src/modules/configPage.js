@@ -34,7 +34,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>WebDAV 同步</h2>
 <table class="input-config-table">
 	<tr><td>WebDAV URL</td>
-		<td><input id="webdavUrlInput" type="url" placeholder="http://127.0.0.1:5244/dav"></td>
+		<td><input id="webdavUrlInput" type="url" placeholder="https://dav.example.com/dav"></td>
 	</tr>
 	<tr><td>用户名/密码</td>
 		<td style="display: flex; gap: 4px;">
