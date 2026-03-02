@@ -68,6 +68,15 @@ export const webdavSync = {
 		return new TextDecoder().decode(decrypted);
 	},
 
+	_formatDuration(ms) {
+		if (ms < 1000) return `${ms}ms`;
+		const s = ms / 1000;
+		if (s < 60) return `${s.toFixed(1)}s`;
+		const m = Math.floor(s / 60);
+		const rs = (s % 60).toFixed(0);
+		return `${m}m${rs}s`;
+	},
+
 	/**
 	 * WebDAV Basic Auth header
 	 */
@@ -100,6 +109,10 @@ export const webdavSync = {
 			body
 		});
 
+		if (response.status === 401) {
+			throw new Error('WebDAV 401 认证失败');
+		}
+
 		if (!response.ok && !(method === 'MKCOL' && response.status === 405)) {
 			throw new Error(`WebDAV ${method} ${path} failed: ${response.status} ${response.statusText}`);
 		}
@@ -124,6 +137,9 @@ export const webdavSync = {
 				await this.request('MKCOL', currentPath);
 				this.dirCache.add(currentPath);
 			} catch (e) {
+				// 如果是认证失败, 应该直接抛出
+				if (e.message.includes('401')) throw e;
+				// 405 Method Not Allowed 通常表示目录已存在
 				if (!e.message.includes('405')) {
 					console.warn('MKCOL error ignored:', e);
 				} else {
@@ -139,6 +155,7 @@ export const webdavSync = {
 	async sync(mode = 'sync-latest', onProgress = null) {
 		if (this.isSyncing) return;
 		this.isSyncing = true;
+		const startTime = Date.now();
 
 		this._updateUI = (text, isError = false) => {
 			const statusEl = document.getElementById('webdavSyncStatus');
@@ -158,6 +175,9 @@ export const webdavSync = {
 			const localSessions = (await IDBManager.getAllSessions()).filter(s => s.id !== 'sess_welcome');
 			
 			this._updateUI('连接服务器...');
+			// 显式测试连接并验证凭据
+			await this.request('PROPFIND', '', null, { Depth: '0' });
+			
 			await this.ensureDir('pChat/sync');
 
 			this._updateUI('扫描远程文件...');
@@ -176,13 +196,15 @@ export const webdavSync = {
 			let count = 0;
 			let downloadCount = 0;
 			let uploadCount = 0;
+			let failCount = 0;
+			let skipCount = 0;
 			const total = allIds.size;
 
 			for (const id of allIds) {
 				count++;
 				const local = localMap.get(id);
 				const remote = remoteLatestMap.get(id);
-				const displayTitle = local?.title || id;
+				const displayTitle = (local?.title || id).substring(0, 32);
 
 				let action = 'skip';
 
@@ -206,23 +228,35 @@ export const webdavSync = {
 				}
 
 				if (action === 'upload') {
-					this._updateUI(`[${count}/${total}] [UPLOAD] ${displayTitle}`);
 					if (local && (local.updateTime === undefined || local.updateTime === null)) {
 						local.updateTime = 0;
 					}
-					await this.uploadSession(local);
-					await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
-					uploadCount++;
+
+					this._updateUI(`[${count}/${total}] [UPLOAD] ${displayTitle}`);
+					try {
+						await this.uploadSession(local);
+						await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
+						uploadCount++;
+					} catch (e) {
+						if (e.message.includes('401')) throw e;
+						failCount++;
+					}
 				} else if (action === 'download') {
 					this._updateUI(`[${count}/${total}] [DOWNLOAD] ${displayTitle}`);
-					await this.downloadAndImportSession(remote);
-					downloadCount++;
+					try {
+						await this.downloadAndImportSession(remote);
+						downloadCount++;
+					} catch (e) {
+						if (e.message.includes('401')) throw e;
+						failCount++;
+					}
 				} else {
-					// Silent skip
+					skipCount++;
 				}
 			}
 
-			const finalStatus = `[同步完成] 上传[${uploadCount}] 下载[${downloadCount}] 时间[${new Date().toLocaleTimeString()}]`;
+			const duration = this._formatDuration(Date.now() - startTime);
+			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 失败[${failCount}] 耗时[${duration}]`;
 			this._updateUI(finalStatus);
 
 			if (downloadCount > 0) {
@@ -299,6 +333,7 @@ export const webdavSync = {
 			}
 			return results;
 		} catch (e) {
+			if (e.message.includes('认证失败')) throw e;
 			console.warn(`Failed to get dir files for ${path}:`, e);
 			return [];
 		}
