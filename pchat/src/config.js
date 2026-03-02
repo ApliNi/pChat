@@ -7,7 +7,7 @@ export const cfg = {
 	defaultSystemPrompt: defaultSystemPrompt,
 
 	modelService: 'Puter.js',
-	puterPriorityModels: ['qwen3-max', 'gemini-3-pro', 'gemini-2.5', 'deepseek-v3.2-exp', 'claude-sonnet-4-5', 'gpt-4.1'],
+	puterPriorityModels: ['qwen', 'gemini', 'deepseek', 'claude'],
 	openaiApiEndpoint: '',
 	openaiApiKey: [],
 	openaiPriorityModels: [],
