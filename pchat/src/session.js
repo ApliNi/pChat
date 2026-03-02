@@ -2,6 +2,7 @@ import { appendMsgDOM, scrollToMinimapBottom } from "./chat.js";
 import { cfg, tmp } from "./config.js";
 import { IDBManager } from "./db.js";
 import { historyList, messageArea, rightPanel, userInput } from "./dom.js";
+import { webdavSync } from "./modules/webdavSync.js";
 import { introSessionText } from "./text.js";
 import { generateId, generateSessionId, scrollToBottom, updateTitle, vibrate } from "./util.js";
 import { worker } from "./worker.js";
@@ -236,6 +237,14 @@ export const deleteSession = async (e, sessionId) => {
 
 	// 确认删除
 	if (!confirm('确认: 永久删除这个会话')) return;
+
+	const session = tmp.sessions.find(s => s.id === sessionId);
+	const timestamp = session?.timestamp;
+
+	// 异步同步删除 WebDAV 上的文件
+	if (cfg.webdavSyncDelete && timestamp) {
+		webdavSync.deleteRemoteSession(sessionId, timestamp).catch(console.error);
+	}
 
 	// 1. 从内存和数据库中移除
 	tmp.sessions = tmp.sessions.filter(s => s.id !== sessionId);

@@ -16,6 +16,7 @@ export const cfg = {
 	webdavPass: '',
 	webdavSyncMode: 'sync-latest',
 	webdavSyncOnStart: false,
+	webdavSyncDelete: false,
 	webdavFileExt: 'json',
 	webdavEncryptionKey: '',
 

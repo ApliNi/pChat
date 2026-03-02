@@ -53,14 +53,15 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 		<td class="select-wrapper">
 			<select id="webdavSyncModeSelect">
 				<option value="sync-latest">同步到最新版本 [双向]</option>
-				<option value="force-upload">强制上传 [本地 -> 远程]</option>
-				<option value="force-download">强制下载 [远程 -> 本地]</option>
+				<option value="force-upload">强制上传 [本地 -> 远程] 清理远程数据</option>
+				<option value="force-download">强制下载 [远程 -> 本地] 清理本地数据</option>
 			</select>
 		</td>
 	</tr>
 	<tr><td>同步选项</td>
 		<td>
-			<label><input id="webdavSyncOnStartInput" type="checkbox"> 启动时同步</label>
+			<label><input id="webdavSyncOnStartInput" type="checkbox"> 启动时运行</label> |
+			<label><input id="webdavSyncDeleteInput" type="checkbox"> 实时同步删除</label>
 		</td>
 	</tr>
 </table>
@@ -124,6 +125,7 @@ const webdavSyncModeSelect = document.getElementById('webdavSyncModeSelect');
 const webdavFileExtInput = document.getElementById('webdavFileExtInput');
 const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInput');
 const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput');
+const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
 
 const webdavSyncBtn = document.getElementById('webdav-sync-btn');
 const webdavSyncStatus = document.getElementById('webdavSyncStatus');
@@ -264,6 +266,10 @@ webdavEncryptionKeyInput.addEventListener('input', () => cfg.setItem('webdavEncr
 // webdavSyncOnStart:
 webdavSyncOnStartInput.checked = cfg.webdavSyncOnStart === true;
 webdavSyncOnStartInput.addEventListener('change', () => cfg.setItem('webdavSyncOnStart', webdavSyncOnStartInput.checked));
+
+// webdavSyncDelete:
+webdavSyncDeleteInput.checked = cfg.webdavSyncDelete === true;
+webdavSyncDeleteInput.addEventListener('change', () => cfg.setItem('webdavSyncDelete', webdavSyncDeleteInput.checked));
 
 webdavSyncBtn.addEventListener('click', async () => {
 	const mode = webdavSyncModeSelect.value;

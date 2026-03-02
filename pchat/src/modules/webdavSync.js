@@ -196,6 +196,7 @@ export const webdavSync = {
 			let count = 0;
 			let downloadCount = 0;
 			let uploadCount = 0;
+			let deleteCount = 0;
 			let failCount = 0;
 			let skipCount = 0;
 			const total = allIds.size;
@@ -207,21 +208,24 @@ export const webdavSync = {
 				const displayTitle = (local?.title || id).substring(0, 32);
 
 				let action = 'skip';
+				const localTime = local?.updateTime || 0;
+				const remoteTime = remote?.timestamp || 0;
 
 				if (mode === 'force-upload') {
-					if (local) action = 'upload';
+					if (local && localTime > remoteTime) action = 'upload';
+					else if (!local && remote) action = 'delete-remote';
 				} else if (mode === 'force-download') {
-					if (remote) action = 'download';
+					if (remote && remoteTime > localTime) action = 'download';
+					else if (local && !remote) action = 'delete-local';
 				} else {
-					const localUpdateTime = local?.updateTime || 0;
 					if (local && !remote) {
 						action = 'upload';
 					} else if (!local && remote) {
 						action = 'download';
 					} else if (local && remote) {
-						if (localUpdateTime > remote.timestamp) {
+						if (localTime > remoteTime) {
 							action = 'upload';
-						} else if (localUpdateTime < remote.timestamp) {
+						} else if (localTime < remoteTime) {
 							action = 'download';
 						}
 					}
@@ -250,16 +254,33 @@ export const webdavSync = {
 						if (e.message.includes('401')) throw e;
 						failCount++;
 					}
+				} else if (action === 'delete-remote') {
+					this._updateUI(`[${count}/${total}] [DEL-REMOTE] ${displayTitle}`);
+					try {
+						await this.request('DELETE', remote.path);
+						deleteCount++;
+					} catch (e) {
+						if (e.message.includes('401')) throw e;
+						failCount++;
+					}
+				} else if (action === 'delete-local') {
+					this._updateUI(`[${count}/${total}] [DEL-LOCAL] ${displayTitle}`);
+					try {
+						await IDBManager.deleteSession(id);
+						deleteCount++;
+					} catch (e) {
+						failCount++;
+					}
 				} else {
 					skipCount++;
 				}
 			}
 
 			const duration = this._formatDuration(Date.now() - startTime);
-			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 失败[${failCount}] 耗时[${duration}]`;
+			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 删除[${deleteCount}] 失败[${failCount}] 耗时[${duration}]`;
 			this._updateUI(finalStatus);
 
-			if (downloadCount > 0) {
+			if (downloadCount > 0 || mode === 'force-download' && deleteCount > 0) {
 				if (confirm(`已从 WebDAV 更新了 ${downloadCount} 个会话. 是否刷新页面以重载数据?`)) {
 					location.reload();
 				}
@@ -419,6 +440,30 @@ export const webdavSync = {
 			} catch (e) {
 				console.warn(`Failed to delete old remote version ${old.path}:`, e);
 			}
+		}
+	},
+
+	/**
+	 * Delete all versions of a session on remote
+	 */
+	async deleteRemoteSession(sessionId, timestamp) {
+		try {
+			if (!timestamp) return;
+			const date = new Date(timestamp);
+			const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+			const dirPath = `pChat/sync/${yearMonth}`;
+
+			const files = await this.getDirFiles(dirPath, false);
+			const ext = cfg.webdavFileExt || 'json';
+			const prefix = `${sessionId}@T`;
+			
+			for (const f of files) {
+				if (f.name.startsWith(prefix) && f.name.endsWith(`.${ext}`)) {
+					await this.request('DELETE', `${dirPath}/${f.name}`);
+				}
+			}
+		} catch (e) {
+			console.warn(`Failed to delete remote session ${sessionId}:`, e);
 		}
 	}
 };
