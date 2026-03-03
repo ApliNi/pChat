@@ -252,8 +252,8 @@ export const webdavSync = {
 						await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
 						uploadCount++;
 					} catch (e) {
-						if (e.message.includes('401')) throw e;
 						failCount++;
+						if (e.message.includes('401')) throw e;
 					}
 				} else if (action === 'download') {
 					this._updateUI(`[${count}/${total}] [DOWNLOAD] ${displayTitle}`);
@@ -261,8 +261,8 @@ export const webdavSync = {
 						await this.downloadAndImportSession(remote);
 						downloadCount++;
 					} catch (e) {
-						if (e.message.includes('401')) throw e;
 						failCount++;
+						if (e.message.includes('401')) throw e;
 					}
 				} else if (action === 'delete-remote') {
 					this._updateUI(`[${count}/${total}] [DEL-REMOTE] ${displayTitle}`);
@@ -270,8 +270,8 @@ export const webdavSync = {
 						await this.request('DELETE', remote.path);
 						deleteCount++;
 					} catch (e) {
-						if (e.message.includes('401')) throw e;
 						failCount++;
+						if (e.message.includes('401')) throw e;
 					}
 				} else if (action === 'delete-local') {
 					this._updateUI(`[${count}/${total}] [DEL-LOCAL] ${displayTitle}`);
@@ -298,6 +298,59 @@ export const webdavSync = {
 		} catch (err) {
 			console.error('WebDAV Sync failed:', err);
 			this._updateUI('同步失败: ' + err.message, true);
+		} finally {
+			this._isMainSyncing = false;
+			refreshStatusDot(false);
+			this._updateUI = null;
+		}
+	},
+
+	/**
+	 * Cleanup files marked as deleted on remote
+	 */
+	async cleanupRemoteDeleted() {
+		if (this._isMainSyncing) return;
+		this._isMainSyncing = true;
+		refreshStatusDot(true);
+		const startTime = Date.now();
+
+		this._updateUI = (text, isError = false) => {
+			const statusEl = document.getElementById('webdavSyncStatus');
+			if (statusEl) {
+				statusEl.style.color = isError ? '#ff4a4a' : '';
+				statusEl.innerText = text;
+			}
+		};
+
+		try {
+			if (!cfg.webdavUrl || !cfg.webdavUser || !cfg.webdavPass) {
+				throw new Error('WebDAV configuration is incomplete');
+			}
+
+			this._updateUI('扫描远程文件...');
+			const remoteFiles = await this.getAllRemoteFiles();
+			const deletedMarkers = remoteFiles.filter(f => f.isDelete);
+
+			let count = 0;
+			let failCount = 0;
+			const total = deletedMarkers.length;
+
+			for (const marker of deletedMarkers) {
+				count++;
+				this._updateUI(`[${count}/${total}] [CLEANUP] ${marker.name}`);
+				try {
+					await this.request('DELETE', marker.path);
+				} catch (e) {
+					failCount++;
+					if (e.message.includes('401')) throw e;
+				}
+			}
+
+			const duration = this._formatDuration(Date.now() - startTime);
+			this._updateUI(`[清理完成] 清理[${total}] 失败[${failCount}] 耗时[${duration}]`);
+		} catch (err) {
+			console.error('Cleanup failed:', err);
+			this._updateUI('清理失败: ' + err.message, true);
 		} finally {
 			this._isMainSyncing = false;
 			refreshStatusDot(false);

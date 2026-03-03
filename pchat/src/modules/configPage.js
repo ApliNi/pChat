@@ -10,9 +10,9 @@ import { webdavSync } from "./webdavSync.js";
 document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>数据</h2>
 <p>在这里导入导出数据和配置:
-	<button id="import-btn">[IMPORT]</button>
-	<button id="export-btn">[EXPORT]</button>
-	<button id="export-current-session-btn">[EXPORT_THIS_CHAT]</button>
+	<button id="import-btn" title="导出所有会话">[IMPORT]</button>
+	<button id="export-btn" title="导入会话 [覆盖相同会话]">[EXPORT]</button>
+	<button id="export-current-session-btn" title="导出当前会话">[EXPORT_THIS_CHAT]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
 <p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
@@ -67,8 +67,10 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 </table>
 <p>
 	<span>目录: <code>./pChat/sync/{日期}/{会话文件}</code></span>
-	<button id="webdav-sync-btn">[RUN_SYNC]</button>
+	<button id="webdav-sync-btn" title="立即运行同步">[RUN_SYNC]</button>
+	<button id="webdav-cleanup-btn" title="清理远程存储中被标记为删除的数据">[CLEAN_DELETE_MARK]</button>
 </p>
+
 <p id="webdavSyncStatus" style="color: var(--text-color-muted);">同步未开始</p>
 
 
@@ -128,7 +130,8 @@ const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput')
 const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
 
 const webdavSyncBtn = document.getElementById('webdav-sync-btn');
-const webdavSyncStatus = document.getElementById('webdavSyncStatus');
+const webdavCleanupBtn = document.getElementById('webdav-cleanup-btn');
+
 const library = document.querySelector('#config details.library');
 
 let openaiApiModify = false;
@@ -272,9 +275,13 @@ webdavSyncDeleteInput.checked = cfg.webdavSyncDelete === true;
 webdavSyncDeleteInput.addEventListener('change', () => cfg.setItem('webdavSyncDelete', webdavSyncDeleteInput.checked));
 
 webdavSyncBtn.addEventListener('click', async () => {
-	const mode = webdavSyncModeSelect.value;
-	await webdavSync.sync(mode);
+	await webdavSync.sync(webdavSyncModeSelect.value);
 });
+
+webdavCleanupBtn.addEventListener('click', async () => {
+	await webdavSync.cleanupRemoteDeleted();
+});
+
 
 // --- 配置页面 ---
 
