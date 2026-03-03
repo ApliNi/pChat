@@ -277,10 +277,13 @@ export const webdavSync = {
 			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 删除[${deleteCount}] 失败[${failCount}] 耗时[${duration}]`;
 			this._updateUI(finalStatus);
 
-			if (downloadCount > 0 || mode === 'force-download' && deleteCount > 0) {
-				if (confirm(`已从 WebDAV 更新了 ${downloadCount} 个会话. 是否刷新页面以重载数据?`)) {
-					location.reload();
-				}
+			const updateCount = downloadCount + deleteCount;
+			if (updateCount > 0) {
+				setTimeout(() => {
+					if (confirm(`已从 WebDAV 更新了 ${updateCount} 个会话. 是否刷新页面以重载数据?`)) {
+						location.reload();
+					}
+				}, 100);
 			}
 		} catch (err) {
 			console.error('WebDAV Sync failed:', err);
