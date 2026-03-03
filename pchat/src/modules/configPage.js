@@ -10,9 +10,10 @@ import { webdavSync } from "./webdavSync.js";
 document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>数据</h2>
 <p>在这里导入导出数据和配置:
-	<button id="import-btn" title="导出所有会话">[IMPORT]</button>
-	<button id="export-btn" title="导入会话 [覆盖相同会话]">[EXPORT]</button>
+	<button id="import-btn" title="导入会话/配置 [覆盖相同会话]">[IMPORT]</button>
+	<button id="export-btn" title="导出所有会话">[EXPORT]</button>
 	<button id="export-current-session-btn" title="导出当前会话">[EXPORT_THIS_CHAT]</button>
+	<button id="export-config-btn" title="导出配置">[EXPORT_CONFIG]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
 <p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
@@ -120,6 +121,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 const importBtn = document.getElementById('import-btn');
 const exportBtn = document.getElementById('export-btn');
 const exportCurrentSessionBtn = document.getElementById('export-current-session-btn');
+const exportConfigBtn = document.getElementById('export-config-btn');
 const importInput = document.getElementById('import-input');
 const defaultSystemPromptInput = document.getElementById('defaultSystemPromptInput');
 const resetPuterData = document.getElementById('reset-puter-data');
@@ -349,7 +351,7 @@ configBtn.addEventListener('click', async () => {
 // 导出功能
 exportBtn.addEventListener('click', async () => {
 	// 二次确认
-	if (!confirm('确认: 导出所有数据')) {
+	if (!confirm('确认: 导出所有会话')) {
 		return;
 	}
 
@@ -438,6 +440,43 @@ exportCurrentSessionBtn.addEventListener('click', async () => {
 	}
 });
 
+// 导出配置功能
+exportConfigBtn.addEventListener('click', async () => {
+	// 二次确认
+	if (!confirm('确认: 导出配置 (包含密钥等敏感信息)')) {
+		return;
+	}
+
+	const originalText = exportConfigBtn.innerText;
+	exportConfigBtn.innerText += '...';
+
+	try {
+		// 构建导出数据
+		const configData = {
+			timestamp: Date.now(),
+			version: IDBManager.version,
+			config: await IDBManager.getConfig(),
+		};
+
+		// 创建 Blob 并下载
+		const blob = new Blob([JSON.stringify(configData, null, '\t')], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `pChat_Config_${new Date().toISOString().slice(0,10)}.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+
+	} catch (err) {
+		console.error('Export config failed:', err);
+		alert('导出配置失败');
+	} finally {
+		exportConfigBtn.innerText = originalText;
+	}
+});
+
 // 导入按钮点击
 importBtn.addEventListener('click', () => {
 	importInput.value = '';
@@ -449,13 +488,16 @@ importInput.addEventListener('change', (e) => {
 	const file = e.target.files[0];
 	if (!file) return;
 
-	// 选择是否覆盖 ID 相同的会话 (是, 否, 取消)
-	const compatible = !confirm(`是否覆盖 ID 相同的会话?\n  - 确定: 保留导入的版本\n  - 取消: 同时保留两者`);
-
 	const reader = new FileReader();
 	reader.onload = async (event) => {
 		try {
 			const data = JSON.parse(event.target.result);
+
+			// 检查是否包含会话，如果包含则询问是否覆盖
+			let compatible = false;
+			if (data.sessions && data.sessions.length > 0) {
+				compatible = !confirm(`检测到会话数据, 是否覆盖 ID 相同的会话?\n  - 确定: 保留导入的版本\n  - 取消: 同时保留两者`);
+			}
 			
 			await IDBManager.importBackup(data, compatible);
 			

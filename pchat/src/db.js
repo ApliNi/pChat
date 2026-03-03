@@ -174,16 +174,13 @@ export const IDBManager = {
 
 	importBackup(data, compatible = false) {
 
-		if (!data.hasOwnProperty('sessions') || !data.hasOwnProperty('chats')) {
-			throw new Error('Invalid backup file format: Missing required fields (sessions/chats)');
-		}
-		if (!Array.isArray(data.sessions) || !Array.isArray(data.chats)) {
-			throw new Error('Invalid backup file format: sessions and chats must be arrays');
+		if (!data.hasOwnProperty('sessions') && !data.hasOwnProperty('chats') && !data.hasOwnProperty('config')) {
+			throw new Error('Invalid backup file format: Missing required fields');
 		}
 
 		// 兼容模式下重写所有 id
 		let newId = '';
-		if(compatible){
+		if(compatible && Array.isArray(data.sessions) && Array.isArray(data.chats)){
 			const time = Date.now();
 			for(let i = 0; i < data.sessions.length; i++){
 				newId = `sess_${time + i}`;
@@ -197,8 +194,14 @@ export const IDBManager = {
 			const tx = this.db.transaction(['sessions', 'chats', 'config'], 'readwrite');
 
 			const configStore = tx.objectStore('config');
-			if (Array.isArray(data.config)) {
-				data.config.forEach(cfg => configStore.put(cfg));
+			if (data.config) {
+				if (Array.isArray(data.config)) {
+					data.config.forEach(cfg => configStore.put(cfg));
+				} else if (typeof data.config === 'object') {
+					Object.entries(data.config).forEach(([id, value]) => {
+						configStore.put({ id, value });
+					});
+				}
 			}
 			const sessionStore = tx.objectStore('sessions');
 			if (Array.isArray(data.sessions)) {
