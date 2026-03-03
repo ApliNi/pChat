@@ -2,7 +2,7 @@
 
 export const IDBManager = {
 	dbName: 'pChat.IpacEL.cc',
-	version: 3,
+	version: 5,
 	db: null,
 
 	init() {
@@ -24,7 +24,7 @@ export const IDBManager = {
 				}
 
 				// 更新数据库
-				if (oldVersion <= 3 && false) {
+				if (oldVersion <= 3) {
 					console.log(`更新数据库[3]`);
 					const tx = e.target.transaction;
 					const sessionStore = tx.objectStore('sessions');
