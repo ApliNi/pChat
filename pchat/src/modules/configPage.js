@@ -16,7 +16,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	<button id="export-config-btn" title="导出配置">[EXPORT_CONFIG]</button>
 	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
-<p>注意: 导出文件包含模型配置和密钥等敏感信息</p>
+<p>注意: 导出文件包含对话记录/模型配置和密钥等敏感信息</p>
 
 
 <h2>模板</h2>
