@@ -86,7 +86,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 		}
 
 		else if(type === 'renderSidebar') {
-			const { sessions } = data;
+			const { sessions, pinnedCollapsed } = data;
 
 			// 首先按置顶状态排序，然后按时间戳排序
 			const sortedSessions = [...sessions].sort((a, b) => {
@@ -117,7 +117,7 @@ import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1
 			
 			// 添加置顶会话
 			if (pinnedSessions.length > 0) {
-				html += /*html*/`<details class="history-group pinned-group" open><summary class="history-group-title">PINNED</summary>`;
+				html += /*html*/`<details class="history-group pinned-group" ${pinnedCollapsed ? '' : 'open'}><summary class="history-group-title">PINNED</summary>`;
 				pinnedSessions.forEach(session => {
 					html += /*html*/`
 						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">

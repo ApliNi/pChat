@@ -212,7 +212,10 @@ export const renderSidebar = async (onlyHighlight = false, scrollIntoViewBlock =
 			el.classList.remove('active');
 		}
 	}else{
-		const html = await worker.run('renderSidebar', { sessions: [...tmp.sessions] });
+		const html = await worker.run('renderSidebar', { 
+			sessions: [...tmp.sessions],
+			pinnedCollapsed: cfg.pinnedCollapsed
+		});
 		historyList.innerHTML = html;
 	}
 

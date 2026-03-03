@@ -1,7 +1,7 @@
 import { aiService } from "../aiService.js";
 import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
-import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, configBtn, searchBtn, messageArea, inputContainer } from '../dom.js';
+import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, configBtn, searchBtn, messageArea, inputContainer, headerH1 } from '../dom.js';
 import { defaultSystemPrompt } from '../text.js';
 import { webdavSync } from "./webdavSync.js";
 
@@ -29,6 +29,14 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>会话</h2>
 <p>默认系统提示词, 清空后跟随软件自动更新</p>
 <pre id="defaultSystemPromptInput" contenteditable="plaintext-only">${defaultSystemPrompt}</pre>
+
+
+<h2>界面</h2>
+<table class="input-config-table">
+	<tr><td>标题文本 (h1)</td>
+		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
+	</tr>
+</table>
 
 
 <h2>WebDAV 同步</h2>
@@ -128,6 +136,7 @@ const webdavFileExtInput = document.getElementById('webdavFileExtInput');
 const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInput');
 const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput');
 const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
+const headerTextInput = document.getElementById('headerTextInput');
 
 const webdavSyncBtn = document.getElementById('webdav-sync-btn');
 const webdavCleanupBtn = document.getElementById('webdav-cleanup-btn');
@@ -273,6 +282,14 @@ webdavSyncOnStartInput.addEventListener('change', () => cfg.setItem('webdavSyncO
 // webdavSyncDelete:
 webdavSyncDeleteInput.checked = cfg.webdavSyncDelete === true;
 webdavSyncDeleteInput.addEventListener('change', () => cfg.setItem('webdavSyncDelete', webdavSyncDeleteInput.checked));
+
+// headerText:
+const defaultHeaderText = '[pChat.IpacEL.cc] (｡・̀ᴗ-)✧';
+headerTextInput.value = cfg.headerText || '';
+headerTextInput.addEventListener('input', () => {
+	cfg.setItem('headerText', headerTextInput.value);
+	if (headerH1) headerH1.innerText = headerTextInput.value || defaultHeaderText;
+});
 
 webdavSyncBtn.addEventListener('click', async () => {
 	await webdavSync.sync(webdavSyncModeSelect.value);

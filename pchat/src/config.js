@@ -19,6 +19,8 @@ export const cfg = {
 	webdavSyncDelete: false,
 	webdavFileExt: 'json',
 	webdavEncryptionKey: '',
+	pinnedCollapsed: false,
+	headerText: '',
 
 	...(await IDBManager.getConfig()),
 	setItem: (id, value) => {

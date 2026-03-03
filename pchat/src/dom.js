@@ -18,4 +18,5 @@ export const searchBtn = document.getElementById('search-btn');
 export const searchPage = document.getElementById('search-page');
 export const minimap = document.getElementById('minimap');
 export const pipWindowBtn = document.getElementById('pip-window-btn');
+export const headerH1 = document.querySelector('header h1');
 

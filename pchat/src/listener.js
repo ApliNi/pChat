@@ -1,6 +1,6 @@
 import { aiService } from "./aiService.js";
 import { cfg, tmp } from "./config.js";
-import { attachedImageBtn, attachedImageInput, modelSelect, newChatBtn, rightPanel, sendBtn, sidebarToggle, userInput } from "./dom.js";
+import { attachedImageBtn, attachedImageInput, historyList, modelSelect, newChatBtn, rightPanel, sendBtn, sidebarToggle, userInput } from "./dom.js";
 import { attachedImage, handleSend } from "./util.js";
 import { createNewSession } from './session.js';
 
@@ -103,3 +103,11 @@ document.addEventListener('beforeinput', (e) => {
 	const pre = e.target.closest('.no-edit');
 	if (pre) e.preventDefault();
 });
+
+// 监听侧边栏 PINNED 区域折叠状态
+historyList.addEventListener('toggle', (e) => {
+	const details = e.target;
+	if (details.tagName === 'DETAILS' && details.classList.contains('pinned-group')) {
+		cfg.setItem('pinnedCollapsed', !details.open);
+	}
+}, true);

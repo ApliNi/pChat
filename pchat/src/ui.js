@@ -19,7 +19,7 @@ import { switchSession } from './session.js';
 import { createIntroSession } from './session.js';
 import { createNewSession } from './session.js';
 import { aiService } from './aiService.js';
-import { modelSelect } from './dom.js';
+import { modelSelect, headerH1 } from './dom.js';
 import { webdavSync } from './modules/webdavSync.js';
 
 if(true){
@@ -31,6 +31,11 @@ if(true){
 	await import('./modules/openImg.js');
 	await import('./modules/pipWindow.js');
 	await import('./modules/searchPage.js');
+
+	// 初始化界面
+	if (cfg.headerText && headerH1) {
+		headerH1.innerText = cfg.headerText;
+	}
 
 	// 推迟加载公式字体
 
