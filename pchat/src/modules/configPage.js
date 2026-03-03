@@ -61,7 +61,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	<tr><td>同步选项</td>
 		<td>
 			<label><input id="webdavSyncOnStartInput" type="checkbox"> 启动时运行</label> |
-			<label><input id="webdavSyncDeleteInput" type="checkbox"> 实时同步删除</label>
+			<label><input id="webdavSyncDeleteInput" type="checkbox"> 同步删除</label>
 		</td>
 	</tr>
 </table>

@@ -211,7 +211,15 @@ export const webdavSync = {
 				const localTime = local?.updateTime || 0;
 				const remoteTime = remote?.timestamp || 0;
 
-				if (mode === 'force-upload') {
+				if (remote?.isDelete) {
+					if (mode === 'force-upload') {
+						if (local) action = 'upload';
+						else action = 'skip';
+					} else {
+						if (local && cfg.webdavSyncDelete) action = 'delete-local';
+						else action = 'skip';
+					}
+				} else if (mode === 'force-upload') {
 					if (local && localTime > remoteTime) action = 'upload';
 					else if (!local && remote) action = 'delete-remote';
 				} else if (mode === 'force-download') {
@@ -303,7 +311,7 @@ export const webdavSync = {
 		
 		let allFiles = [];
 		const ext = cfg.webdavFileExt || 'json';
-		const regex = new RegExp(`^(sess_.*)@T(\\d+)\\.${ext}$`);
+		const regex = new RegExp(`^(sess_.*)@(?:T(\\d+)|(delete))\\.${ext}$`);
 
 		for (const dir of monthDirs) {
 			if (this._updateUI) this._updateUI(`扫描远程文件: ${dir.name}`);
@@ -311,9 +319,11 @@ export const webdavSync = {
 			for (const file of files) {
 				const match = file.name.match(regex);
 				if (match) {
+					const isDelete = !!match[3];
 					allFiles.push({
 						id: match[1],
-						timestamp: parseInt(match[2]),
+						timestamp: isDelete ? Infinity : parseInt(match[2]),
+						isDelete,
 						name: file.name,
 						path: `pChat/sync/${dir.name}/${file.name}`
 					});
@@ -452,16 +462,23 @@ export const webdavSync = {
 			const date = new Date(timestamp);
 			const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 			const dirPath = `pChat/sync/${yearMonth}`;
+			await this.ensureDir(dirPath);
 
 			const files = await this.getDirFiles(dirPath, false);
 			const ext = cfg.webdavFileExt || 'json';
-			const prefix = `${sessionId}@T`;
+			const prefix = `${sessionId}@`;
 			
 			for (const f of files) {
 				if (f.name.startsWith(prefix) && f.name.endsWith(`.${ext}`)) {
 					await this.request('DELETE', `${dirPath}/${f.name}`);
 				}
 			}
+
+			// 上传删除标记
+			const markerName = `${sessionId}@delete.${ext}`;
+			await this.request('PUT', `${dirPath}/${markerName}`, Date.now(), {
+				'Content-Type': 'application/json'
+			});
 		} catch (e) {
 			console.warn(`Failed to delete remote session ${sessionId}:`, e);
 		}
