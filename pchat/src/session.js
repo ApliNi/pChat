@@ -236,7 +236,7 @@ export const deleteSession = async (e, sessionId) => {
 	if (tmp.isProcessing && cfg.lastSessionId === sessionId) return;
 
 	// 确认删除
-	if (!confirm('确认: 永久删除这个会话')) return;
+	if (!confirm('确定要删除这个会话吗? 它会永久消失! (真的很久!)')) return;
 
 	const session = tmp.sessions.find(s => s.id === sessionId);
 	const timestamp = session?.timestamp;
