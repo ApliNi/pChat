@@ -2,7 +2,7 @@
 
 export const IDBManager = {
 	dbName: 'pChat.IpacEL.cc',
-	version: 3,
+	version: 4,
 	db: null,
 
 	init() {
@@ -11,6 +11,8 @@ export const IDBManager = {
 
 			request.onupgradeneeded = (e) => {
 				const db = e.target.result;
+				const oldVersion = e.oldVersion;
+
 				if (!db.objectStoreNames.contains('sessions')) {
 					db.createObjectStore('sessions', { keyPath: 'id' });
 				}
@@ -19,6 +21,25 @@ export const IDBManager = {
 				}
 				if (!db.objectStoreNames.contains('config')) {
 					db.createObjectStore('config', { keyPath: 'id' });
+				}
+
+				// 更新数据库
+				if (oldVersion <= 3) {
+					console.log(`更新数据库[3]`);
+					const tx = e.target.transaction;
+					const sessionStore = tx.objectStore('sessions');
+					const getAllRequest = sessionStore.getAll();
+					getAllRequest.onsuccess = () => {
+						const sessions = getAllRequest.result;
+						const now = Date.now();
+						sessions.forEach(session => {
+							if (session.updateTime === undefined) {
+								session.updateTime = now;
+								sessionStore.put(session);
+							}
+						});
+					};
+					console.log(`更新数据库[3] 更新完成`);
 				}
 			};
 

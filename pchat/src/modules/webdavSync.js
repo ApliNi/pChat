@@ -9,7 +9,7 @@ export const webdavSync = {
 	
 	dirCache: new Set(),
 	_isMainSyncing: false,
-	updateUI: null,
+	_updateUI: null,
 
 	/**
 	 * Encryption/Decryption Helpers
@@ -187,7 +187,7 @@ export const webdavSync = {
 			
 			const remoteLatestMap = new Map();
 			for (const file of remoteFiles) {
-				if (file.timestamp > (remoteLatestMap.get(file.id)?.timestamp || -1)) {
+				if (file.updateTime > (remoteLatestMap.get(file.id)?.updateTime || -1)) {
 					remoteLatestMap.set(file.id, file);
 				}
 			}
@@ -209,36 +209,23 @@ export const webdavSync = {
 				const remote = remoteLatestMap.get(id);
 				const displayTitle = (local?.title || id).substring(0, 32);
 
-				let action = 'skip';
 				const localTime = local?.updateTime || 0;
-				const remoteTime = remote?.timestamp || 0;
+				const remoteTime = remote?.updateTime || 0;
 
+				let action = 'skip';
 				if (remote?.isDelete) {
-					if (mode === 'force-upload') {
-						if (local) action = 'upload';
-						else action = 'skip';
-					} else {
-						if (local && cfg.webdavSyncDelete) action = 'delete-local';
-						else action = 'skip';
-					}
+					const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
+					action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
 				} else if (mode === 'force-upload') {
-					if (local && localTime > remoteTime) action = 'upload';
+					if (local && localTime !== remoteTime) action = 'upload';
 					else if (!local && remote) action = 'delete-remote';
 				} else if (mode === 'force-download') {
-					if (remote && remoteTime > localTime) action = 'download';
+					if (remote && remoteTime !== localTime) action = 'download';
 					else if (local && !remote) action = 'delete-local';
 				} else {
-					if (local && !remote) {
-						action = 'upload';
-					} else if (!local && remote) {
-						action = 'download';
-					} else if (local && remote) {
-						if (localTime > remoteTime) {
-							action = 'upload';
-						} else if (localTime < remoteTime) {
-							action = 'download';
-						}
-					}
+					// 普通同步：最新者优先
+					if (local && localTime > remoteTime) action = 'upload';
+					else if (remote && remoteTime > localTime) action = 'download';
 				}
 
 				if (action === 'upload') {
@@ -265,7 +252,7 @@ export const webdavSync = {
 						if (e.message.includes('401')) throw e;
 					}
 				} else if (action === 'delete-remote') {
-					this._updateUI(`[${count}/${total}] [DEL-REMOTE] ${displayTitle}`);
+					this._updateUI(`[${count}/${total}] [DEL_REMOTE] ${displayTitle}`);
 					try {
 						await this.request('DELETE', remote.path);
 						deleteCount++;
@@ -274,7 +261,7 @@ export const webdavSync = {
 						if (e.message.includes('401')) throw e;
 					}
 				} else if (action === 'delete-local') {
-					this._updateUI(`[${count}/${total}] [DEL-LOCAL] ${displayTitle}`);
+					this._updateUI(`[${count}/${total}] [DEL_LOCAL] ${displayTitle}`);
 					try {
 						await IDBManager.deleteSession(id);
 						deleteCount++;
@@ -378,7 +365,7 @@ export const webdavSync = {
 					const isDelete = !!match[3];
 					allFiles.push({
 						id: match[1],
-						timestamp: isDelete ? Infinity : parseInt(match[2]),
+						updateTime: isDelete ? Infinity : parseInt(match[2]),
 						isDelete,
 						name: file.name,
 						path: `pChat/sync/${dir.name}/${file.name}`
@@ -439,10 +426,9 @@ export const webdavSync = {
 		const fileName = `${session.id}@T${session.updateTime || 0}.${ext}`;
 		const messages = await IDBManager.getSessionMessages(session.id);
 		const backupData = {
-			timestamp: Date.now(),
 			version: IDBManager.version,
 			sessions: [session],
-			chats: [{ id: session.id, messages }]
+			chats: [{ id: session.id, messages }],
 		};
 
 		let body = JSON.stringify(backupData, null, '\t');
@@ -499,7 +485,7 @@ export const webdavSync = {
 	 * Cleanup old versions of a session on remote
 	 */
 	async cleanupRemoteOldVersions(sessionId, currentTimestamp, allRemoteFiles) {
-		const oldVersions = allRemoteFiles.filter(f => f.id === sessionId && f.timestamp !== currentTimestamp);
+		const oldVersions = allRemoteFiles.filter(f => f.id === sessionId && f.updateTime !== currentTimestamp);
 		for (const old of oldVersions) {
 			try {
 				await this.request('DELETE', old.path);
