@@ -14,17 +14,32 @@ export const vibrate = async (v) => {
 	if ('vibrate' in navigator) navigator.vibrate(v);
 }
 
+export const refreshStatusDot = (syncingChange) => {
+	if (typeof syncingChange === 'boolean') {
+		tmp.syncTasks += syncingChange ? 1 : -1;
+	}
+	if (tmp.isProcessing) {
+		statusDot.classList.add('active');
+		statusDot.classList.remove('syncing');
+	} else if (tmp.syncTasks > 0) {
+		statusDot.classList.remove('active');
+		statusDot.classList.add('syncing');
+	} else {
+		statusDot.classList.remove('active');
+		statusDot.classList.remove('syncing');
+	}
+};
+
 export const toggleState = (loading) => {
 	tmp.isProcessing = loading;
 	document.querySelectorAll('.destroy-btn').forEach(b => b.disabled = loading);
 
 	if (loading) {
-		statusDot.classList.add('active');
 		sendBtn.innerText = 'STOP';
 	} else {
-		statusDot.classList.remove('active');
 		sendBtn.innerText = 'SEND';
 	}
+	refreshStatusDot();
 };
 
 export const toggleSessionPin = async (e, sessionId) => {

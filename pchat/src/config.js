@@ -32,6 +32,7 @@ export const tmp = {
 	messages: [],
 	attachedImages: [],
 	isProcessing: false,
+	syncTasks: 0,
 	abortController: null,
 	sessions: [],
 	isAutoScroll: true,

@@ -1,5 +1,6 @@
 import { cfg, tmp } from "../config.js";
 import { IDBManager } from "../db.js";
+import { refreshStatusDot } from "../util.js";
 
 /**
  * WebDAV Sync Module
@@ -7,7 +8,7 @@ import { IDBManager } from "../db.js";
 export const webdavSync = {
 	
 	dirCache: new Set(),
-	isSyncing: false,
+	_isMainSyncing: false,
 	updateUI: null,
 
 	/**
@@ -153,8 +154,9 @@ export const webdavSync = {
 	 * Sync all sessions with WebDAV
 	 */
 	async sync(mode = 'sync-latest', onProgress = null) {
-		if (this.isSyncing) return;
-		this.isSyncing = true;
+		if (this._isMainSyncing) return;
+		this._isMainSyncing = true;
+		refreshStatusDot(true);
 		const startTime = Date.now();
 
 		this._updateUI = (text, isError = false) => {
@@ -297,7 +299,8 @@ export const webdavSync = {
 			console.error('WebDAV Sync failed:', err);
 			this._updateUI('同步失败: ' + err.message, true);
 		} finally {
-			this.isSyncing = false;
+			this._isMainSyncing = false;
+			refreshStatusDot(false);
 			this._updateUI = null;
 		}
 	},
@@ -457,6 +460,7 @@ export const webdavSync = {
 	 * Delete all versions of a session on remote
 	 */
 	async deleteRemoteSession(sessionId, timestamp) {
+		refreshStatusDot(true);
 		try {
 			if (!timestamp) return;
 			const date = new Date(timestamp);
@@ -481,6 +485,8 @@ export const webdavSync = {
 			});
 		} catch (e) {
 			console.warn(`Failed to delete remote session ${sessionId}:`, e);
+		} finally {
+			refreshStatusDot(false);
 		}
 	}
 };
