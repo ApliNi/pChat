@@ -22,6 +22,8 @@ export const cfg = {
 	pinnedCollapsed: false,
 	headerText: '',
 	autoHideHeader: false,
+	customCss: '',
+	customJs: '',
 
 	...(await IDBManager.getConfig()),
 	setItem: (id, value) => {

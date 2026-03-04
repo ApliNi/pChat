@@ -68,7 +68,37 @@ if(true){
 	tmp.sessions = await IDBManager.getAllSessions();
 	renderSidebar();
 
+	// 应用自定义 CSS 和 JS
+	const applyCustomStyles = () => {
+		let styleTag = document.getElementById('custom-css-tag');
+		if (!styleTag) {
+			styleTag = document.createElement('style');
+			styleTag.id = 'custom-css-tag';
+			document.head.appendChild(styleTag);
+		}
+		styleTag.textContent = cfg.customCss || '';
+	};
+	const applyCustomScripts = () => {
+		if (cfg.customJs) {
+			try {
+				const script = document.createElement('script');
+				script.id = 'custom-js-tag';
+				script.textContent = `(function(){ ${cfg.customJs} })();`;
+				const oldScript = document.getElementById('custom-js-tag');
+				if (oldScript) oldScript.remove();
+				document.body.appendChild(script);
+			} catch (e) {
+				console.error('[CustomJS] Error executing custom script:', e);
+			}
+		}
+	};
+	window.applyCustomStyles = applyCustomStyles;
+	window.applyCustomScripts = applyCustomScripts;
+	applyCustomStyles();
+	applyCustomScripts();
+
 	// 启动时同步 WebDAV
+
 	if (cfg.webdavSyncOnStart) {
 		console.log(`[Main] 启动时同步 WebDAV`);
 		webdavSync.sync(cfg.webdavSyncMode).catch(err => {

@@ -122,6 +122,13 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	</div>
 </details>
 
+<h2>自定义</h2>
+<p>自定义 CSS, 修改后立即生效</p>
+<pre id="customCssInput" contenteditable="plaintext-only"></pre>
+<p>自定义 JS, 修改后刷新页面生效</p>
+<pre id="customJsInput" contenteditable="plaintext-only"></pre>
+
+
 `;
 
 const importBtn = document.getElementById('import-btn');
@@ -146,6 +153,9 @@ const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput')
 const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
 const headerTextInput = document.getElementById('headerTextInput');
 const autoHideHeaderInput = document.getElementById('autoHideHeaderInput');
+const customCssInput = document.getElementById('customCssInput');
+const customJsInput = document.getElementById('customJsInput');
+
 
 
 const webdavSyncBtn = document.getElementById('webdav-sync-btn');
@@ -317,7 +327,21 @@ autoHideHeaderInput.addEventListener('change', () => {
 });
 applyHeaderVisible();
 
+// customCss:
+customCssInput.textContent = cfg.customCss || '';
+customCssInput.addEventListener('input', () => {
+	cfg.setItem('customCss', customCssInput.textContent);
+	if (window.applyCustomStyles) window.applyCustomStyles();
+});
+
+// customJs:
+customJsInput.textContent = cfg.customJs || '';
+customJsInput.addEventListener('input', () => {
+	cfg.setItem('customJs', customJsInput.textContent);
+});
+
 webdavSyncBtn.addEventListener('click', async () => {
+
 
 	await webdavSync.sync(webdavSyncModeSelect.value);
 });
