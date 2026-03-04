@@ -114,7 +114,6 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 </details>
 
 
-
 <h2>模板</h2>
 <details class="think library"><summary>pChat Library</summary>
 	<div class="library-list">
@@ -122,12 +121,12 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	</div>
 </details>
 
-<h2>自定义</h2>
+
+<h2>自定义脚本</h2>
 <p>自定义 CSS, 修改后立即生效</p>
 <pre id="customCssInput" contenteditable="plaintext-only"></pre>
 <p>自定义 JS, 修改后刷新页面生效</p>
 <pre id="customJsInput" contenteditable="plaintext-only"></pre>
-
 
 `;
 

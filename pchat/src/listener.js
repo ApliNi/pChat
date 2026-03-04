@@ -111,3 +111,11 @@ historyList.addEventListener('toggle', (e) => {
 		cfg.setItem('pinnedCollapsed', !details.open);
 	}
 }, true);
+
+// 移动端打开键盘后适配高度
+if (window.visualViewport) {
+	window.visualViewport.addEventListener('resize', () => {
+		const height = window.visualViewport.height;
+		document.body.style.height = `${height}px`;
+	});
+}
