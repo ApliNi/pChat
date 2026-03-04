@@ -94,9 +94,12 @@ header {
 	transition: margin-top 0.3s;
 }
 
-header.hide {
-	margin-top: -45px;
+@media (min-width: 1201px) {
+	header.hide {
+		margin-top: -45px;
+	}
 }
+
 
 h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; font-family: 'Ubuntu', 'HarmonyOS'; }
 

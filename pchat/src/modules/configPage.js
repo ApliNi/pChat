@@ -15,7 +15,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
 	</tr>
 	<tr><td>自动隐藏 Header</td>
-		<td><label><input id="autoHideHeaderInput" type="checkbox"> 仅在打开配置时显示</label></td>
+		<td><label><input id="autoHideHeaderInput" type="checkbox"> 仅在打开配置时显示 (移动端模式无效)</label></td>
 	</tr>
 </table>
 
