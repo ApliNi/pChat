@@ -21,6 +21,7 @@ export const cfg = {
 	webdavEncryptionKey: '',
 	pinnedCollapsed: false,
 	headerText: '',
+	autoHideHeader: false,
 
 	...(await IDBManager.getConfig()),
 	setItem: (id, value) => {

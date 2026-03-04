@@ -91,6 +91,11 @@ header {
 	background: #000;
 	flex-shrink: 0;
 	height: 45px;
+	transition: margin-top 0.3s;
+}
+
+header.hide {
+	margin-top: -45px;
 }
 
 h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; color: #fff; font-family: 'Ubuntu', 'HarmonyOS'; }
@@ -1130,8 +1135,8 @@ select {
 }
 #search-input {
 	flex: 1;
-	background: rgba(255, 255, 255, 0.05);
-	border: 1px solid #333;
+	background: rgba(12, 12, 12, 0.88);
+	border: 1px solid var(--border-color);
 	color: #fff;
 	padding: 8px 12px;
 	font-family: var(--font-stack);

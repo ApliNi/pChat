@@ -8,6 +8,18 @@ import { webdavSync } from "./webdavSync.js";
 
 // 加载配置页面内容
 document.querySelector('#config .content').innerHTML = /*html*/`
+
+<h2>界面</h2>
+<table class="input-config-table">
+	<tr><td>Header 标题文本</td>
+		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
+	</tr>
+	<tr><td>自动隐藏 Header</td>
+		<td><label><input id="autoHideHeaderInput" type="checkbox"> 仅在打开配置时显示</label></td>
+	</tr>
+</table>
+
+
 <h2>数据</h2>
 <p>
 	<span>在这里导入导出数据和配置:</span>
@@ -102,13 +114,6 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 </details>
 
 
-<h2>界面</h2>
-<table class="input-config-table">
-	<tr><td>标题文本 (h1)</td>
-		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
-	</tr>
-</table>
-
 
 <h2>模板</h2>
 <details class="think library"><summary>pChat Library</summary>
@@ -140,6 +145,8 @@ const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInp
 const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput');
 const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
 const headerTextInput = document.getElementById('headerTextInput');
+const autoHideHeaderInput = document.getElementById('autoHideHeaderInput');
+
 
 const webdavSyncBtn = document.getElementById('webdav-sync-btn');
 const webdavCleanupBtn = document.getElementById('webdav-cleanup-btn');
@@ -294,7 +301,24 @@ headerTextInput.addEventListener('input', () => {
 	if (headerH1) headerH1.innerText = headerTextInput.value || defaultHeaderText;
 });
 
+// autoHideHeader:
+const header = document.querySelector('header');
+const applyHeaderVisible = () => {
+	if (cfg.autoHideHeader && !configBtn.classList.contains('open')) {
+		header.classList.add('hide');
+	} else {
+		header.classList.remove('hide');
+	}
+};
+autoHideHeaderInput.checked = cfg.autoHideHeader === true;
+autoHideHeaderInput.addEventListener('change', () => {
+	cfg.setItem('autoHideHeader', autoHideHeaderInput.checked);
+	applyHeaderVisible();
+});
+applyHeaderVisible();
+
 webdavSyncBtn.addEventListener('click', async () => {
+
 	await webdavSync.sync(webdavSyncModeSelect.value);
 });
 
@@ -328,8 +352,10 @@ configBtn.addEventListener('click', async () => {
 		newChatBtn.style.pointerEvents = 'none';
 		historyList.style.pointerEvents = 'none';
 		rightPanel.querySelector('& > .config').style.display = '';
+		applyHeaderVisible();
 	}else{
 		sidebar.classList.remove('open-config');
+
 		for(const e of [messageArea, inputContainer]){
 			e.style.display = '';
 		}
@@ -339,6 +365,8 @@ configBtn.addEventListener('click', async () => {
 		rightPanel.querySelector('& > .config').style.display = 'none';
 
 		rightPanel.scrollTop = rightPanelScrollTop;
+
+		applyHeaderVisible();
 
 		// 重新加载模型列表
 		if(openaiApiModify){
