@@ -331,6 +331,7 @@ webdavCleanupBtn.addEventListener('click', async () => {
 
 // 记住滚动条状态
 let rightPanelScrollTop = 0;
+let configPageScrollTop = 0;
 // 打开配置界面
 configBtn.addEventListener('click', async () => {
 	configBtn.classList.toggle('open');
@@ -340,6 +341,7 @@ configBtn.addEventListener('click', async () => {
 
 		sidebar.classList.add('open-config');
 		rightPanelScrollTop = rightPanel.scrollTop;
+		rightPanel.scrollTop = configPageScrollTop;
 
 
 		// 重新填充默认提示词
@@ -364,6 +366,7 @@ configBtn.addEventListener('click', async () => {
 		historyList.style.pointerEvents = '';
 		rightPanel.querySelector('& > .config').style.display = 'none';
 
+		configPageScrollTop = rightPanel.scrollTop;
 		rightPanel.scrollTop = rightPanelScrollTop;
 
 		applyHeaderVisible();

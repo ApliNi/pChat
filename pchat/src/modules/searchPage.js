@@ -19,6 +19,7 @@ const searchDeepBtn = document.getElementById('search-deep-btn');
 const searchResultsList = document.getElementById('search-results-list');
 
 let rightPanelScrollTop = 0;
+let searchPageScrollTop = 0;
 let isDeepSearch = false;
 
 // 分页相关变量
@@ -36,6 +37,7 @@ searchBtn.addEventListener('click', async () => {
 
 		sidebar.classList.add('open-search');
 		rightPanelScrollTop = rightPanel.scrollTop;
+		rightPanel.scrollTop = searchPageScrollTop;
 
 		for(const e of [messageArea, inputContainer]){
 			e.style.display = 'none';
@@ -56,6 +58,7 @@ searchBtn.addEventListener('click', async () => {
 		historyList.style.pointerEvents = '';
 		searchPage.style.display = 'none';
 
+		searchPageScrollTop = rightPanel.scrollTop;
 		rightPanel.scrollTop = rightPanelScrollTop;
 	}
 	sidebarToggle.checked = false;
