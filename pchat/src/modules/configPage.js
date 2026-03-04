@@ -9,35 +9,15 @@ import { webdavSync } from "./webdavSync.js";
 // 加载配置页面内容
 document.querySelector('#config .content').innerHTML = /*html*/`
 <h2>数据</h2>
-<p>在这里导入导出数据和配置:
+<p>
+	<span>在这里导入导出数据和配置:</span>
 	<button id="import-btn" title="导入会话/配置 [覆盖相同会话]">[IMPORT]</button>
 	<button id="export-btn" title="导出所有会话">[EXPORT]</button>
 	<button id="export-current-session-btn" title="导出当前会话">[EXPORT_THIS_CHAT]</button>
 	<button id="export-config-btn" title="导出配置">[EXPORT_CONFIG]</button>
-	<input type="file" id="import-input" accept=".json" style="display: none;">
 </p>
+<input type="file" id="import-input" accept=".json" style="display: none;">
 <p>注意: 导出文件包含对话记录/模型配置和密钥等敏感信息</p>
-
-
-<h2>模板</h2>
-<details class="think library"><summary>pChat Library</summary>
-	<div class="library-list">
-		<p class="loading">Loading...</p>
-	</div>
-</details>
-
-
-<h2>会话</h2>
-<p>默认系统提示词, 清空后跟随软件自动更新</p>
-<pre id="defaultSystemPromptInput" contenteditable="plaintext-only">${defaultSystemPrompt}</pre>
-
-
-<h2>界面</h2>
-<table class="input-config-table">
-	<tr><td>标题文本 (h1)</td>
-		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
-	</tr>
-</table>
 
 
 <h2>WebDAV 同步</h2>
@@ -79,8 +59,12 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	<button id="webdav-sync-btn" title="立即运行同步">[RUN_SYNC]</button>
 	<button id="webdav-cleanup-btn" title="清理远程存储中被标记为删除的数据">[CLEAN]</button>
 </p>
-
 <p id="webdavSyncStatus" style="color: var(--text-color-muted);">同步未开始</p>
+
+
+<h2>会话</h2>
+<p>默认系统提示词, 清空后跟随软件自动更新</p>
+<pre id="defaultSystemPromptInput" contenteditable="plaintext-only">${defaultSystemPrompt}</pre>
 
 
 <h2>模型</h2>
@@ -116,6 +100,23 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	</p>
 	<p>支持添加多个 API 密钥, 轮询调用</p>
 </details>
+
+
+<h2>界面</h2>
+<table class="input-config-table">
+	<tr><td>标题文本 (h1)</td>
+		<td><input id="headerTextInput" type="text" placeholder="[pChat.IpacEL.cc] (｡・̀ᴗ-)✧"></td>
+	</tr>
+</table>
+
+
+<h2>模板</h2>
+<details class="think library"><summary>pChat Library</summary>
+	<div class="library-list">
+		<p class="loading">Loading...</p>
+	</div>
+</details>
+
 `;
 
 const importBtn = document.getElementById('import-btn');
