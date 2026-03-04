@@ -141,15 +141,12 @@ window.regenerateResponseTo = async function(id) {
 		// 先通过 appendMsgDOM 创建（默认会加到最后）
 		await appendMsgDOM(newMsgObj);
 		
-		// 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素之后)
+		// 3. 将 DOM 元素移动到正确位置 (即 userId 对应的元素下方)
+		// 注意: 由于使用 column-reverse 布局，视觉上的“下方”对应 DOM 中的“前方”
 		const userDiv = document.getElementById(id);
 		const newAiDiv = document.getElementById(newAiId);
 		if (userDiv && newAiDiv) {
-			if (userDiv.nextSibling) {
-				messageArea.insertBefore(newAiDiv, userDiv.nextSibling);
-			} else {
-				messageArea.appendChild(newAiDiv);
-			}
+			messageArea.insertBefore(newAiDiv, userDiv);
 		}
 
 		// 4. 保存状态并开始生成
