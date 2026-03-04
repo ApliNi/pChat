@@ -127,6 +127,8 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 <pre id="customCssInput" contenteditable="plaintext-only"></pre>
 <p>自定义 JS, 修改后刷新页面生效</p>
 <pre id="customJsInput" contenteditable="plaintext-only"></pre>
+<p>添加 URL 参数 <code>?safe</code> 临时禁用自定义脚本</p>
+
 
 `;
 

@@ -41,7 +41,11 @@ if(true){
 
 	// 自定义 CSS 和 JS
 	if(true){
+		const params = new URLSearchParams(window.location.search);
+		const isSafeMode = params.has('safe');
+
 		const applyCustomStyles = () => {
+			if (isSafeMode) return;
 			let styleTag = document.getElementById('custom-css-tag');
 			if (!styleTag) {
 				styleTag = document.createElement('style');
@@ -51,6 +55,7 @@ if(true){
 			styleTag.textContent = cfg.customCss || '';
 		};
 		const applyCustomScripts = () => {
+			if (isSafeMode) return;
 			if (cfg.customJs) {
 				try {
 					const script = document.createElement('script');
