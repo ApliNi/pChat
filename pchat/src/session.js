@@ -249,13 +249,14 @@ export const deleteSession = async (e, sessionId) => {
 
 	const session = tmp.sessions.find(s => s.id === sessionId);
 	const timestamp = session?.timestamp;
+	const updateTime = session?.updateTime;
 
 	// 取消排队中的更新任务
 	webdavSync.cancelUpdateRemoteSession(sessionId);
 
 	// 异步同步删除 WebDAV 上的文件
 	if (cfg.webdavSyncDelete && timestamp) {
-		webdavSync.deleteRemoteSession(sessionId, timestamp).catch(console.error);
+		webdavSync.deleteRemoteSession(sessionId, timestamp, updateTime).catch(console.error);
 	}
 
 	// 1. 从内存和数据库中移除

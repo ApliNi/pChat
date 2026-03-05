@@ -72,7 +72,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 <p>
 	<span>目录: <code>./pChat/sync/{日期}/{会话文件}</code></span>
 	<button id="webdav-sync-btn" title="立即运行同步">[RUN_SYNC]</button>
-	<button id="webdav-cleanup-btn" title="清理远程存储中被标记为删除的数据">[CLEAN]</button>
+	<button id="webdav-cleanup-btn" title="清理远程文件和删除标记">[CLEAN]</button>
 </p>
 <p id="webdavSyncStatus" style="color: var(--text-color-muted);">同步未开始</p>
 
