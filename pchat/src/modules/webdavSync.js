@@ -7,7 +7,6 @@ import { refreshStatusDot } from "../util.js";
  */
 export const webdavSync = {
 	
-	dirCache: new Set(),
 	_isMainSyncing: false,
 	_updateUI: null,
 	onSessionUpdate: null,
@@ -123,29 +122,36 @@ export const webdavSync = {
 	},
 
 	/**
-	 * Ensure directory exists
+	 * Ensure directory exists (check from target, go up if needed)
 	 */
 	async ensureDir(path) {
 		const cleanPath = path.replace(/\/$/, '');
-		if (this.dirCache.has(cleanPath)) return;
+		if (!cleanPath) return;
 
 		const parts = cleanPath.split('/').filter(p => p);
-		let currentPath = '';
-		for (const part of parts) {
-			currentPath += (currentPath ? '/' : '') + part;
-			if (this.dirCache.has(currentPath)) continue;
+		
+		let startIndex = 0;
+		for (let i = parts.length - 1; i >= 0; i--) {
+			const checkPath = parts.slice(0, i + 1).join('/');
+			try {
+				const res = await this.request('PROPFIND', checkPath, null, { Depth: '0' });
+				if (res.ok) {
+					startIndex = i + 1;
+					break;
+				}
+			} catch (e) {
+				if (e.message.includes('401')) throw e;
+			}
+		}
 
+		for (let i = startIndex; i < parts.length; i++) {
+			const currentPath = parts.slice(0, i + 1).join('/');
 			try {
 				await this.request('MKCOL', currentPath);
-				this.dirCache.add(currentPath);
 			} catch (e) {
-				// 如果是认证失败, 应该直接抛出
 				if (e.message.includes('401')) throw e;
-				// 405 Method Not Allowed 通常表示目录已存在
 				if (!e.message.includes('405')) {
-					console.warn('MKCOL error ignored:', e);
-				} else {
-					this.dirCache.add(currentPath);
+					console.warn(`Failed to create dir ${currentPath}:`, e);
 				}
 			}
 		}
@@ -159,14 +165,22 @@ export const webdavSync = {
 		this._isMainSyncing = true;
 		refreshStatusDot(true);
 		const startTime = Date.now();
+		let statusInterval = null;
 
 		this._updateUI = (text, isError = false) => {
 			const statusEl = document.getElementById('webdavSyncStatus');
 			if (statusEl) {
-				statusEl.style.color = isError ? '#ff4a4a' : '';
-				statusEl.innerText = text;
+				// 如果是最终状态或者显式的错误
+				if (typeof text === 'string') {
+					statusEl.style.color = isError ? '#ff4a4a' : '';
+					statusEl.innerText = text;
+				} else {
+					// 这里的 text 可以是包含 HTML 的字符串 (来自 updateRealtimeStatus)
+					statusEl.style.color = '';
+					statusEl.innerHTML = text;
+				}
 			}
-			if (onProgress) onProgress(0, 0, text);
+			if (onProgress) onProgress(0, 0, typeof text === 'string' ? text : statusEl.innerText);
 		};
 
 		try {
@@ -174,17 +188,9 @@ export const webdavSync = {
 				throw new Error('WebDAV configuration is incomplete');
 			}
 
-			this.dirCache.clear();
-			const localSessions = (await IDBManager.getAllSessions()).filter(s => s.id !== 'sess_welcome');
-			
-			this._updateUI('连接服务器...');
-			// 显式测试连接并验证凭据
-			await this.request('PROPFIND', '', null, { Depth: '0' });
-			
-			await this.ensureDir('pChat/sync');
-
 			this._updateUI('扫描远程文件...');
-			const remoteFiles = await this.getAllRemoteFiles();
+			const localSessions = (await IDBManager.getAllSessions()).filter(s => s.id !== 'sess_welcome');
+			const { allFiles: remoteFiles, existingDirs: existingMonthDirs } = await this.getAllRemoteFiles();
 			
 			const remoteLatestMap = new Map();
 			for (const file of remoteFiles) {
@@ -195,98 +201,146 @@ export const webdavSync = {
 
 			const localMap = new Map(localSessions.map(s => [s.id, s]));
 			const allIds = new Set([...localMap.keys(), ...remoteLatestMap.keys()]);
-			
-			let count = 0;
+
 			let downloadCount = 0;
 			let uploadCount = 0;
 			let deleteCount = 0;
 			let failCount = 0;
 			let skipCount = 0;
-			const total = allIds.size;
+			const allIdsArray = Array.from(allIds);
+			const total = allIdsArray.length;
 
-			for (const id of allIds) {
-				count++;
-				const local = localMap.get(id);
-				const remote = remoteLatestMap.get(id);
-				const displayTitle = (local?.title || id).substring(0, 32);
+			const updateRealtimeStatus = (isFinal = false) => {
+				const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+				const processed = uploadCount + downloadCount + deleteCount + failCount + skipCount;
+				const status = `[${processed}/${total}] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 删除[${deleteCount}] 失败[${failCount}] 耗时[${duration}s]`;
+				this._updateUI(isFinal ? `[同步完成] ${status}` : `[正在同步] ${status}`);
+			};
 
-				const localTime = local?.updateTime || 0;
-				const remoteTime = remote?.updateTime || 0;
+			if (total === 0) {
+				updateRealtimeStatus(true);
+				return;
+			}
 
-				let action = 'skip';
-				if (remote?.isDelete) {
-					const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
-					action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
-				} else if (mode === 'force-upload') {
-					if (local && localTime !== remoteTime) action = 'upload';
-					else if (!local && remote) action = 'delete-remote';
-				} else if (mode === 'force-download') {
-					if (remote && remoteTime !== localTime) action = 'download';
-					else if (local && !remote) action = 'delete-local';
-				} else {
-					// 普通同步：最新者优先
-					if (local && localTime > remoteTime) action = 'upload';
-					else if (remote && remoteTime > localTime) action = 'download';
+			statusInterval = setInterval(() => updateRealtimeStatus(), 100);
+
+			const threads = cfg.webdavSyncThreads || 1;
+			let taskIndex = 0;
+
+			if (mode !== 'force-download') {
+				const neededDirs = new Set();
+				for (const id of allIds) {
+					const local = localMap.get(id);
+					if (local) {
+						const date = new Date(local.timestamp || Date.now());
+						const dirName = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+						if (!existingMonthDirs.includes(dirName)) {
+							neededDirs.add(dirName);
+						}
+					}
 				}
 
-				if (action === 'upload') {
-					if (local && (local.updateTime === undefined || local.updateTime === null)) {
-						local.updateTime = 0;
-					}
-
-					this._updateUI(`[${count}/${total}] [UPLOAD] ${displayTitle}`);
-					try {
-						await this.uploadSession(local);
-						await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
-						uploadCount++;
-					} catch (e) {
-						failCount++;
-						if (e.message.includes('401')) throw e;
-					}
-				} else if (action === 'download') {
-					this._updateUI(`[${count}/${total}] [DOWNLOAD] ${displayTitle}`);
-					try {
-						const imported = await this.downloadAndImportSession(remote);
-						if (imported) {
-							downloadCount++;
-							if (this.onSessionUpdate) await this.onSessionUpdate(id);
-						} else {
-							skipCount++;
+				if (neededDirs.size > 0) {
+					await Promise.all(Array.from(neededDirs).map(async (dirName) => {
+						try {
+							await this.request('MKCOL', `pChat/sync/${dirName}`);
+						} catch (e) {
+							if (e.message.includes('401')) throw e;
 						}
-					} catch (e) {
-						failCount++;
-						if (e.message.includes('401')) throw e;
-					}
-				} else if (action === 'delete-remote') {
-					this._updateUI(`[${count}/${total}] [DEL_REMOTE] ${displayTitle}`);
-					try {
-						await this.request('DELETE', remote.path);
-						deleteCount++;
-					} catch (e) {
-						failCount++;
-						if (e.message.includes('401')) throw e;
-					}
-				} else if (action === 'delete-local') {
-					this._updateUI(`[${count}/${total}] [DEL_LOCAL] ${displayTitle}`);
-					try {
-						await IDBManager.deleteSession(id);
-						deleteCount++;
-						if (this.onSessionUpdate) await this.onSessionUpdate(id);
-					} catch (e) {
-						failCount++;
-					}
-				} else {
-					skipCount++;
+					}));
 				}
 			}
 
-			const duration = this._formatDuration(Date.now() - startTime);
-			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 删除[${deleteCount}] 失败[${failCount}] 耗时[${duration}]`;
-			this._updateUI(finalStatus);
+			const workers = Array.from({ length: threads }, async () => {
+				while (taskIndex < allIdsArray.length) {
+					const currentIndex = taskIndex++;
+					const id = allIdsArray[currentIndex];
+
+					const local = localMap.get(id);
+					const remote = remoteLatestMap.get(id);
+
+					const localTime = local?.updateTime || 0;
+					const remoteTime = remote?.updateTime || 0;
+
+					let action = 'skip';
+					if (remote?.isDelete) {
+						const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
+						action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
+					} else if (mode === 'force-upload') {
+						if (local && localTime !== remoteTime) action = 'upload';
+						else if (!local && remote) action = 'delete-remote';
+					} else if (mode === 'force-download') {
+						if (remote && remoteTime !== localTime) action = 'download';
+						else if (local && !remote) action = 'delete-local';
+					} else {
+						// 普通同步：最新者优先
+						if (local && localTime > remoteTime) action = 'upload';
+						else if (remote && remoteTime > localTime) action = 'download';
+					}
+
+					if (action === 'upload') {
+						if (local && (local.updateTime === undefined || local.updateTime === null)) {
+							local.updateTime = 0;
+						}
+						let retries = 1;
+						while (true) {
+							try {
+								await this.uploadSession(local);
+								await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
+								uploadCount++;
+								break;
+							} catch (e) {
+								if (e.message.includes('401')) throw e;
+								if (retries > 0) {
+									retries--;
+									await new Promise(resolve => setTimeout(resolve, 3000));
+									continue;
+								}
+								failCount++;
+								break;
+							}
+						}
+					} else if (action === 'download') {
+						try {
+							const imported = await this.downloadAndImportSession(remote);
+							if (imported) {
+								downloadCount++;
+								if (this.onSessionUpdate) await this.onSessionUpdate(id);
+							} else {
+								skipCount++;
+							}
+						} catch (e) {
+							failCount++;
+							if (e.message.includes('401')) throw e;
+						}
+					} else if (action === 'delete-remote') {
+						try {
+							await this.request('DELETE', remote.path);
+							deleteCount++;
+						} catch (e) {
+							failCount++;
+							if (e.message.includes('401')) throw e;
+						}
+					} else if (action === 'delete-local') {
+						try {
+							await IDBManager.deleteSession(id);
+							deleteCount++;
+							if (this.onSessionUpdate) await this.onSessionUpdate(id);
+						} catch (e) {
+							failCount++;
+						}
+					} else {
+						skipCount++;
+					}
+				}
+			});
+
+			await Promise.all(workers);
+			updateRealtimeStatus(true);
 		} catch (err) {
 			console.error('WebDAV Sync failed:', err);
-			this._updateUI('同步失败: ' + err.message, true);
 		} finally {
+			if (statusInterval) clearInterval(statusInterval);
 			this._isMainSyncing = false;
 			refreshStatusDot(false);
 			this._updateUI = null;
@@ -314,9 +368,9 @@ export const webdavSync = {
 			if (!cfg.webdavUrl || !cfg.webdavUser || !cfg.webdavPass) {
 				throw new Error('WebDAV configuration is incomplete');
 			}
-
+			
 			this._updateUI('扫描远程文件...');
-			const remoteFiles = await this.getAllRemoteFiles();
+			const { allFiles: remoteFiles } = await this.getAllRemoteFiles();
 			const deletedMarkers = remoteFiles.filter(f => f.isDelete);
 
 			let count = 0;
@@ -350,68 +404,91 @@ export const webdavSync = {
 	 * Scan all monthly directories and return all file info
 	 */
 	async getAllRemoteFiles() {
-		const rootFiles = await this.getDirFiles('pChat/sync', true);
+		let rootFiles;
+		try {
+			rootFiles = await this.getDirFiles('pChat/sync', true);
+		} catch (e) {
+			if (e.message.includes('404')) {
+				this._updateUI?.('创建同步目录...');
+				// 已知 pChat/sync 不存在，从 pChat 开始检查，减少重复的 PROPFIND 请求
+				await this.ensureDir('pChat');
+				try {
+					await this.request('MKCOL', 'pChat/sync');
+				} catch (e2) {
+					if (e2.message.includes('401')) throw e2;
+				}
+				return { allFiles: [], existingDirs: [] };
+			}
+			throw e;
+		}
+
 		const monthDirs = rootFiles.filter(f => f.isDir && /^\d{4}-\d{2}$/.test(f.name));
-		
-		let allFiles = [];
+		const existingDirs = monthDirs.map(d => d.name);
+
 		const ext = cfg.webdavFileExt || 'json';
 		const regex = new RegExp(`^(sess_.*)@(?:T(\\d+)|(delete))\\.${ext}$`);
-
-		for (const dir of monthDirs) {
-			if (this._updateUI) this._updateUI(`扫描远程文件: ${dir.name}`);
-			const files = await this.getDirFiles(`pChat/sync/${dir.name}`, false);
-			for (const file of files) {
-				const match = file.name.match(regex);
-				if (match) {
-					const isDelete = !!match[3];
-					allFiles.push({
-						id: match[1],
-						updateTime: isDelete ? Infinity : parseInt(match[2]),
-						isDelete,
-						name: file.name,
-						path: `pChat/sync/${dir.name}/${file.name}`
-					});
-				}
+		
+		this._updateUI?.(`扫描远程目录 [0/${monthDirs.length}]`);
+		let scannedCount = 0;
+		
+		const allFilesResults = await Promise.all(monthDirs.map(async (dir) => {
+			try {
+				const files = await this.getDirFiles(`pChat/sync/${dir.name}`, false);
+				scannedCount++;
+				this._updateUI?.(`扫描远程目录 [${scannedCount}/${monthDirs.length}]: ${dir.name}`);
+				
+				return files.map(file => {
+					const match = file.name.match(regex);
+					if (match) {
+						const isDelete = !!match[3];
+						return {
+							id: match[1],
+							updateTime: isDelete ? Infinity : parseInt(match[2]),
+							isDelete,
+							name: file.name,
+							path: `pChat/sync/${dir.name}/${file.name}`
+						};
+					}
+					return null;
+				}).filter(f => f);
+			} catch (e) {
+				console.warn(`Failed to scan dir ${dir.name}:`, e);
+				return [];
 			}
-		}
-		return allFiles;
+		}));
+
+		return { allFiles: allFilesResults.flat(), existingDirs };
 	},
 
 	/**
 	 * Get file list with directory info
 	 */
 	async getDirFiles(path, includeDir = false) {
-		try {
-			const res = await this.request('PROPFIND', path, null, { Depth: '1' });
-			if (res.status !== 207) return [];
+		const res = await this.request('PROPFIND', path, null, { Depth: '1' });
+		if (res.status !== 207) return [];
 
-			const text = await res.text();
-			const parser = new DOMParser();
-			const xml = parser.parseFromString(text, 'text/xml');
-			const responses = xml.getElementsByTagNameNS('*', 'response');
-			
-			const results = [];
-			for (let i = 0; i < responses.length; i++) {
-				if (i === 0) continue;
-				const resp = responses[i];
-				const href = resp.getElementsByTagNameNS('*', 'href')[0]?.textContent;
-				if (href) {
-					const decodedHref = decodeURIComponent(href).replace(/\/$/, '');
-					const name = decodedHref.split('/').pop();
-					if (!name) continue;
+		const text = await res.text();
+		const parser = new DOMParser();
+		const xml = parser.parseFromString(text, 'text/xml');
+		const responses = xml.getElementsByTagNameNS('*', 'response');
+		
+		const results = [];
+		for (let i = 0; i < responses.length; i++) {
+			if (i === 0) continue;
+			const resp = responses[i];
+			const href = resp.getElementsByTagNameNS('*', 'href')[0]?.textContent;
+			if (href) {
+				const decodedHref = decodeURIComponent(href).replace(/\/$/, '');
+				const name = decodedHref.split('/').pop();
+				if (!name) continue;
 
-					const isDir = resp.getElementsByTagNameNS('*', 'collection').length > 0;
-					if (isDir && !includeDir) continue;
+				const isDir = resp.getElementsByTagNameNS('*', 'collection').length > 0;
+				if (isDir && !includeDir) continue;
 
-					results.push({ name, isDir, path: decodedHref });
-				}
+				results.push({ name, isDir, path: decodedHref });
 			}
-			return results;
-		} catch (e) {
-			if (e.message.includes('认证失败')) throw e;
-			console.warn(`Failed to get dir files for ${path}:`, e);
-			return [];
 		}
+		return results;
 	},
 
 	/**
@@ -421,12 +498,11 @@ export const webdavSync = {
 		const date = new Date(session.timestamp || Date.now());
 		const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 		const dirPath = `pChat/sync/${yearMonth}`;
-		await this.ensureDir(dirPath);
-
 		const ext = cfg.webdavFileExt || 'json';
 		const fileName = `${session.id}@T${session.updateTime || 0}.${ext}`;
 		const messages = await IDBManager.getSessionMessages(session.id);
 		const backupData = {
+			uploadTime: Date.now(),
 			version: IDBManager.version,
 			sessions: [session],
 			chats: [{ id: session.id, messages }],

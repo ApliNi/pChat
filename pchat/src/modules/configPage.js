@@ -34,8 +34,11 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 
 <h2>WebDAV 同步</h2>
 <table class="input-config-table">
-	<tr><td>WebDAV URL</td>
-		<td><input id="webdavUrlInput" type="url" placeholder="https://dav.example.com/dav"></td>
+	<tr><td>WebDAV URL/并发</td>
+		<td style="display: flex; gap: 4px;">
+			<input id="webdavUrlInput" type="url" placeholder="https://dav.example.com/dav">
+			<input id="webdavSyncThreadsInput" type="number" placeholder="1" min="1" max="256" style="max-width: min-content;">
+		</td>
 	</tr>
 	<tr><td>用户名/密码</td>
 		<td style="display: flex; gap: 4px;">
@@ -50,7 +53,6 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 		</td>
 	</tr>
 	<tr><td>同步模式</td>
-
 		<td class="select-wrapper">
 			<select id="webdavSyncModeSelect">
 				<option value="sync-latest">同步到最新版本 [双向]</option>
@@ -147,6 +149,7 @@ const openaiPriorityModelsInput = document.getElementById('openaiPriorityModelsI
 const webdavUrlInput = document.getElementById('webdavUrlInput');
 const webdavUserInput = document.getElementById('webdavUserInput');
 const webdavPassInput = document.getElementById('webdavPassInput');
+const webdavSyncThreadsInput = document.getElementById('webdavSyncThreadsInput');
 const webdavSyncModeSelect = document.getElementById('webdavSyncModeSelect');
 const webdavFileExtInput = document.getElementById('webdavFileExtInput');
 const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInput');
@@ -279,6 +282,15 @@ webdavUserInput.value = cfg.webdavUser || '';
 webdavUserInput.addEventListener('input', () => cfg.setItem('webdavUser', webdavUserInput.value));
 webdavPassInput.value = cfg.webdavPass || '';
 webdavPassInput.addEventListener('input', () => cfg.setItem('webdavPass', webdavPassInput.value));
+
+// webdavSyncThreads:
+webdavSyncThreadsInput.value = cfg.webdavSyncThreads || 1;
+webdavSyncThreadsInput.addEventListener('input', () => {
+	let val = parseInt(webdavSyncThreadsInput.value) || 1;
+	if (val < 1) val = 1;
+	if (val > 256) val = 256;
+	cfg.setItem('webdavSyncThreads', val);
+});
 
 // webdavSyncMode:
 webdavSyncModeSelect.value = cfg.webdavSyncMode || 'sync-latest';
