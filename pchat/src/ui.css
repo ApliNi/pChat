@@ -1149,7 +1149,6 @@ select {
 }
 #search-input:focus {
 	border-color: #555;
-	background: rgba(255, 255, 255, 0.08);
 }
 #search-deep-btn {
 	background: transparent;
