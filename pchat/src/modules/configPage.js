@@ -523,7 +523,6 @@ if (true) {
 // 配置页面管理
 if (true) {
 	let scrollTop = 0;
-
 	configBtn.addEventListener('click', async () => {
 		const nowScrollTop = scrollTop;
 		scrollTop = rightPanel.scrollTop;

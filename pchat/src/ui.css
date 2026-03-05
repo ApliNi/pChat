@@ -122,6 +122,10 @@ select {
 	min-width: 100px;
 	transition: all 0.3s;
 }
+select > option {
+	background: #0c0c0ce0;
+	color: var(--text-color);
+}
 
 .select-wrapper { position: relative; }
 .select-wrapper::after {

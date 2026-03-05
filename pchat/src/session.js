@@ -180,7 +180,7 @@ export const switchSession = async (id, force = false) => {
 			const msg = tmp.messages[i];
 			const count = tmp.messages.length - i;
 
-			await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: true, animate: false });
+			await appendMsgDOM({ ...msg, animate: false, fromTopToBottom: true });
 			if(cssAnimation) chatScrollToBottom(count < visibleMsgs);
 
 			// 延迟渲染避免卡顿
@@ -218,7 +218,7 @@ export const renderSidebar = async (onlyHighlight = false, scrollIntoViewBlock =
 			el.classList.remove('active');
 		}
 	}else{
-		const html = await worker.run('renderSidebar', { 
+		const html = await worker.run('renderSidebar', {
 			sessions: [...tmp.sessions],
 			pinnedCollapsed: cfg.pinnedCollapsed
 		});

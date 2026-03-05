@@ -18,7 +18,6 @@ const searchInput = document.getElementById('search-input');
 const searchDeepBtn = document.getElementById('search-deep-btn');
 const searchResultsList = document.getElementById('search-results-list');
 
-let scrollTop = 0; // 保存页面滚动位置
 let isDeepSearch = false;
 
 // 分页相关变量
@@ -27,6 +26,7 @@ let displayedCount = 0;
 const PAGE_SIZE = 200;
 
 // 切换搜索界面
+let scrollTop = 0;
 searchBtn.addEventListener('click', async () => {
 	const nowScrollTop = scrollTop;
 	scrollTop = rightPanel.scrollTop;

@@ -11,13 +11,11 @@ export const webdavSync = {
 	_existingDirs: new Set(), // 目录存在性缓存
 
 	getAuthHeader() {
-		const user = cfg.webdavUser;
-		const pass = cfg.webdavPass;
-		if (!user || !pass) return {};
-		return {
-			'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(user + ':' + pass)))
-		};
-	},
+		if (!cfg.webdavUser || !cfg.webdavPass) return {};
+		const data = new TextEncoder().encode(`${cfg.webdavUser}:${cfg.webdavPass}`);
+		const base64 = btoa(String.fromCharCode(...data));
+		return { 'Authorization': `Basic ${base64}` };
+},
 
 	async request(method, path, body = null, headers = {}) {
 		const url = cfg.webdavUrl.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
@@ -188,87 +186,80 @@ export const webdavSync = {
 					if (currentIndex >= allIdsArray.length) break;
 
 					const id = allIdsArray[currentIndex];
-					try {
-						const local = localMap.get(id);
-						const remote = remoteLatestMap.get(id);
 
-						const localTime = local?.updateTime || 0;
-						const remoteTime = remote?.updateTime || 0;
+					const local = localMap.get(id);
+					const remote = remoteLatestMap.get(id);
 
-						let action = 'skip';
-						if (remote?.isDelete) {
-							const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
-							action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
-						} else if (mode === 'force-upload') {
-							if (local && (!remote || localTime !== remoteTime)) action = 'upload';
-							else if (!local && remote) action = 'delete-remote';
-						} else if (mode === 'force-download') {
-							if (remote && (!local || remoteTime !== localTime)) action = 'download';
-							else if (local && !remote) action = 'delete-local';
-						} else {
-							if (local && (!remote || localTime > remoteTime)) action = 'upload';
-							else if (remote && (!local || remoteTime > localTime)) action = 'download';
+					const localTime = local?.updateTime || 0;
+					const remoteTime = remote?.updateTime || 0;
+
+					let action = 'skip';
+					if (remote?.isDelete) {
+						const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
+						action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
+					} else if (mode === 'force-upload') {
+						if (local && (!remote || localTime !== remoteTime)) action = 'upload';
+						else if (!local && remote) action = 'delete-remote';
+					} else if (mode === 'force-download') {
+						if (remote && (!local || remoteTime !== localTime)) action = 'download';
+						else if (local && !remote) action = 'delete-local';
+					} else {
+						if (local && (!remote || localTime > remoteTime)) action = 'upload';
+						else if (remote && (!local || remoteTime > localTime)) action = 'download';
+					}
+
+					if (action === 'upload') {
+						if (local && (local.updateTime === undefined || local.updateTime === null)) {
+							local.updateTime = 0;
 						}
-
-						if (action === 'upload') {
-							if (local && (local.updateTime === undefined || local.updateTime === null)) {
-								local.updateTime = 0;
-							}
-							let retries = 1;
-							let success = false;
-							while (retries >= 0) {
-								try {
-									await this.uploadSession(local);
-									uploadCount++;
-									success = true;
-									break;
-								} catch (e) {
-									if (e.message.includes('401')) throw e;
-									if (retries > 0) {
-										retries--;
-										await new Promise(resolve => setTimeout(resolve, 3000));
-										continue;
-									}
-									console.error(`Upload ${id} failed:`, e);
-									success = false;
-									break;
-								}
-							}
-							if (!success) failCount++;
-						} else if (action === 'download') {
+						let retries = 2;
+						let success = false;
+						while (retries >= 0) {
 							try {
-								const imported = await this.downloadAndImportSession(remote);
-								if (imported) {
-									downloadCount++;
-									if (this.onSessionUpdate) await this.onSessionUpdate(id);
-								} else {
-									skipCount++;
-								}
+								await this.uploadSession(local);
+								uploadCount++;
+								success = true;
+								break;
 							} catch (e) {
-								console.error(`Download ${id} failed:`, e);
-								failCount++;
 								if (e.message.includes('401')) throw e;
+								if (retries > 0) {
+									retries--;
+									await new Promise(resolve => setTimeout(resolve, 3000));
+									continue;
+								}
+								console.error(`Upload ${id} failed:`, e);
+								success = false;
+								break;
 							}
-						} else if (action === 'delete-remote') {
-							deleteCount++;
-						} else if (action === 'delete-local') {
-							try {
-								await IDBManager.deleteSession(id);
-								deleteCount++;
-								if (this.onSessionUpdate) await this.onSessionUpdate(id);
-							} catch (e) {
-								console.error(`Local delete ${id} failed:`, e);
-								failCount++;
-							}
-						} else {
-							skipCount++;
 						}
-					} catch (e) {
-						if (e.message.includes('401')) throw e;
-						console.error(`Task ${id} processing error:`, e);
-						// 此处 catch 是为了防止 unexpected error 导致总计数丢失
-						// upload/download/delete 已经分别有自己的计数逻辑，但这里多加一层兜底
-						// 注意：只有在 above actions 都没捕获到的情况下才在此增加 failCount
+						if (!success) failCount++;
+					} else if (action === 'download') {
+						try {
+							const imported = await this.downloadAndImportSession(remote);
+							if (imported) {
+								downloadCount++;
+								if (this.onSessionUpdate) await this.onSessionUpdate(id);
+							} else {
+								skipCount++;
+							}
+						} catch (e) {
+							console.error(`Download ${id} failed:`, e);
+							failCount++;
+							if (e.message.includes('401')) throw e;
+						}
+					} else if (action === 'delete-remote') {
+						deleteCount++;
+					} else if (action === 'delete-local') {
+						try {
+							await IDBManager.deleteSession(id);
+							deleteCount++;
+							if (this.onSessionUpdate) await this.onSessionUpdate(id);
+						} catch (e) {
+							console.error(`Local delete ${id} failed:`, e);
+							failCount++;
+						}
+					} else {
+						skipCount++;
 					}
 				}
 			});
