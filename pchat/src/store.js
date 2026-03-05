@@ -19,7 +19,7 @@ const initialState = {
 		webdavSyncOnStart: false,
 		webdavSyncDelete: false,
 		webdavSyncUpdate: false,
-		webdavSyncThreads: 1,
+		webdavSyncThreads: 4,
 		webdavFileExt: 'json',
 		webdavEncryptionKey: '',
 		pinnedCollapsed: false,

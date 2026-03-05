@@ -37,7 +37,7 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	<tr><td>WebDAV URL/并发</td>
 		<td style="display: flex; gap: 4px;">
 			<input id="webdavUrlInput" type="url" placeholder="https://dav.example.com/dav">
-			<input id="webdavSyncThreadsInput" type="number" placeholder="1" min="1" max="256" style="max-width: min-content;">
+			<input id="webdavSyncThreadsInput" type="number" placeholder="4" min="1" max="256" style="max-width: min-content;">
 		</td>
 	</tr>
 	<tr><td>用户名/密码</td>
@@ -286,9 +286,9 @@ webdavPassInput.value = cfg.webdavPass || '';
 webdavPassInput.addEventListener('input', () => cfg.setItem('webdavPass', webdavPassInput.value));
 
 // webdavSyncThreads:
-webdavSyncThreadsInput.value = cfg.webdavSyncThreads || 1;
+webdavSyncThreadsInput.value = cfg.webdavSyncThreads;
 webdavSyncThreadsInput.addEventListener('input', () => {
-	let val = parseInt(webdavSyncThreadsInput.value) || 1;
+	let val = parseInt(webdavSyncThreadsInput.value);
 	if (val < 1) val = 1;
 	if (val > 256) val = 256;
 	cfg.setItem('webdavSyncThreads', val);

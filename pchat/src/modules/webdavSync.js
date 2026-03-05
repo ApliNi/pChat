@@ -154,7 +154,7 @@ export const webdavSync = {
 
 			statusInterval = setInterval(() => updateRealtimeStatus(), 100);
 
-			const threads = cfg.webdavSyncThreads || 1;
+			const threads = cfg.webdavSyncThreads || 4;
 			let taskIndex = 0;
 
 			if (mode !== 'force-download') {
