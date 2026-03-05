@@ -63,8 +63,9 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 	</tr>
 	<tr><td>同步选项</td>
 		<td>
-			<label><input id="webdavSyncOnStartInput" type="checkbox"> 启动时运行</label> |
-			<label><input id="webdavSyncDeleteInput" type="checkbox"> 同步删除</label>
+			<label title="启动后立即运行同步"><input id="webdavSyncOnStartInput" type="checkbox"> 启动时运行</label> |
+			<label title="任何修改后延迟 15 秒同步"><input id="webdavSyncUpdateInput" type="checkbox"> 同步更新</label> |
+			<label title="删除会话时同步"><input id="webdavSyncDeleteInput" type="checkbox"> 同步删除</label>
 		</td>
 	</tr>
 </table>
@@ -154,6 +155,7 @@ const webdavSyncModeSelect = document.getElementById('webdavSyncModeSelect');
 const webdavFileExtInput = document.getElementById('webdavFileExtInput');
 const webdavEncryptionKeyInput = document.getElementById('webdavEncryptionKeyInput');
 const webdavSyncOnStartInput = document.getElementById('webdavSyncOnStartInput');
+const webdavSyncUpdateInput = document.getElementById('webdavSyncUpdateInput');
 const webdavSyncDeleteInput = document.getElementById('webdavSyncDeleteInput');
 const headerTextInput = document.getElementById('headerTextInput');
 const autoHideHeaderInput = document.getElementById('autoHideHeaderInput');
@@ -315,6 +317,10 @@ webdavSyncOnStartInput.addEventListener('change', () => cfg.setItem('webdavSyncO
 // webdavSyncDelete:
 webdavSyncDeleteInput.checked = cfg.webdavSyncDelete === true;
 webdavSyncDeleteInput.addEventListener('change', () => cfg.setItem('webdavSyncDelete', webdavSyncDeleteInput.checked));
+
+// webdavSyncUpdate:
+webdavSyncUpdateInput.checked = cfg.webdavSyncUpdate === true;
+webdavSyncUpdateInput.addEventListener('change', () => cfg.setItem('webdavSyncUpdate', webdavSyncUpdateInput.checked));
 
 // headerText:
 const defaultHeaderText = '[pChat.IpacEL.cc] (｡・̀ᴗ-)✧';

@@ -18,6 +18,7 @@ const initialState = {
 		webdavSyncMode: 'sync-latest',
 		webdavSyncOnStart: false,
 		webdavSyncDelete: false,
+		webdavSyncUpdate: false,
 		webdavSyncThreads: 1,
 		webdavFileExt: 'json',
 		webdavEncryptionKey: '',

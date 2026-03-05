@@ -6,119 +6,42 @@ import { refreshStatusDot } from "../util.js";
  * WebDAV Sync Module
  */
 export const webdavSync = {
-	
-	_isMainSyncing: false,
 	_updateUI: null,
-	onSessionUpdate: null,
+	_isMainSyncing: false,
+	_existingDirs: new Set(), // 目录存在性缓存
 
-	/**
-	 * Encryption/Decryption Helpers
-	 */
-	async _deriveKey(password, salt) {
-		const encoder = new TextEncoder();
-		const passwordKey = await crypto.subtle.importKey(
-			'raw',
-			encoder.encode(password),
-			'PBKDF2',
-			false,
-			['deriveKey']
-		);
-		return crypto.subtle.deriveKey(
-			{
-				name: 'PBKDF2',
-				salt: salt,
-				iterations: 100000,
-				hash: 'SHA-256'
+	getAuthHeader() {
+		const user = cfg.webdavUser;
+		const pass = cfg.webdavPass;
+		if (!user || !pass) return {};
+		return {
+			'Authorization': 'Basic ' + btoa(unescape(encodeURIComponent(user + ':' + pass)))
+		};
+	},
+
+	async request(method, path, body = null, headers = {}) {
+		const url = cfg.webdavUrl.replace(/\/$/, '') + '/' + path.replace(/^\//, '');
+		const res = await fetch(url, {
+			method,
+			headers: {
+				...this.getAuthHeader(),
+				...headers
 			},
-			passwordKey,
-			{ name: 'AES-GCM', length: 256 },
-			false,
-			['encrypt', 'decrypt']
-		);
-	},
-
-	async _encrypt(text, password) {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(text);
-		const salt = crypto.getRandomValues(new Uint8Array(16));
-		const iv = crypto.getRandomValues(new Uint8Array(12));
-		const key = await this._deriveKey(password, salt);
-		const ciphertext = await crypto.subtle.encrypt(
-			{ name: 'AES-GCM', iv: iv },
-			key,
-			data
-		);
-
-		const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
-		combined.set(salt, 0);
-		combined.set(iv, salt.length);
-		combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
-		return combined;
-	},
-
-	async _decrypt(encryptedData, password) {
-		const salt = encryptedData.slice(0, 16);
-		const iv = encryptedData.slice(16, 28);
-		const ciphertext = encryptedData.slice(28);
-		const key = await this._deriveKey(password, salt);
-		const decrypted = await crypto.subtle.decrypt(
-			{ name: 'AES-GCM', iv: iv },
-			key,
-			ciphertext
-		);
-		return new TextDecoder().decode(decrypted);
+			body
+		});
+		if (res.status === 401) throw new Error('WebDAV 401: Unauthorized');
+		if (!res.ok && res.status !== 207 && res.status !== 404 && res.status !== 405) {
+			throw new Error(`WebDAV ${res.status}: ${res.statusText}`);
+		}
+		return res;
 	},
 
 	_formatDuration(ms) {
-		if (ms < 1000) return `${ms}ms`;
-		const s = ms / 1000;
-		if (s < 60) return `${s.toFixed(1)}s`;
+		if (ms < 1000) return ms + 'ms';
+		const s = Math.floor(ms / 1000);
+		if (s < 60) return s + 's';
 		const m = Math.floor(s / 60);
-		const rs = (s % 60).toFixed(0);
-		return `${m}m${rs}s`;
-	},
-
-	/**
-	 * WebDAV Basic Auth header
-	 */
-	getAuthHeader() {
-		const credentials = `${cfg.webdavUser}:${cfg.webdavPass}`;
-		const encoder = new TextEncoder();
-		const data = encoder.encode(credentials);
-		let binString = "";
-		for (const byte of data) {
-			binString += String.fromCharCode(byte);
-		}
-		return `Basic ${btoa(binString)}`;
-	},
-
-	/**
-	 * Perform WebDAV request
-	 */
-	async request(method, path, body = null, headers = {}) {
-		const baseUrl = cfg.webdavUrl.endsWith('/') ? cfg.webdavUrl : cfg.webdavUrl + '/';
-		const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-		const url = baseUrl + cleanPath;
-
-		const defaultHeaders = {
-			'Authorization': this.getAuthHeader(),
-		};
-		
-		const response = await fetch(url, {
-			method,
-			headers: { ...defaultHeaders, ...headers },
-			body
-		});
-
-		if (response.status === 401) {
-			throw new Error('WebDAV 401 认证失败');
-		}
-
-		if (!response.ok && !(method === 'MKCOL' && response.status === 405)) {
-			throw new Error(`WebDAV ${method} ${path} failed: ${response.status} ${response.statusText}`);
-		}
-
-		return response;
+		return m + 'm' + (s % 60) + 's';
 	},
 
 	/**
@@ -126,16 +49,21 @@ export const webdavSync = {
 	 */
 	async ensureDir(path) {
 		const cleanPath = path.replace(/\/$/, '');
-		if (!cleanPath) return;
+		if (!cleanPath || this._existingDirs.has(cleanPath)) return;
 
 		const parts = cleanPath.split('/').filter(p => p);
 		
 		let startIndex = 0;
 		for (let i = parts.length - 1; i >= 0; i--) {
 			const checkPath = parts.slice(0, i + 1).join('/');
+			if (this._existingDirs.has(checkPath)) {
+				startIndex = i + 1;
+				break;
+			}
 			try {
 				const res = await this.request('PROPFIND', checkPath, null, { Depth: '0' });
 				if (res.ok) {
+					this._existingDirs.add(checkPath);
 					startIndex = i + 1;
 					break;
 				}
@@ -148,9 +76,12 @@ export const webdavSync = {
 			const currentPath = parts.slice(0, i + 1).join('/');
 			try {
 				await this.request('MKCOL', currentPath);
+				this._existingDirs.add(currentPath);
 			} catch (e) {
 				if (e.message.includes('401')) throw e;
-				if (!e.message.includes('405')) {
+				if (e.message.includes('405')) {
+					this._existingDirs.add(currentPath); // 目录已存在
+				} else {
 					console.warn(`Failed to create dir ${currentPath}:`, e);
 				}
 			}
@@ -170,12 +101,10 @@ export const webdavSync = {
 		this._updateUI = (text, isError = false) => {
 			const statusEl = document.getElementById('webdavSyncStatus');
 			if (statusEl) {
-				// 如果是最终状态或者显式的错误
 				if (typeof text === 'string') {
 					statusEl.style.color = isError ? '#ff4a4a' : '';
 					statusEl.innerText = text;
 				} else {
-					// 这里的 text 可以是包含 HTML 的字符串 (来自 updateRealtimeStatus)
 					statusEl.style.color = '';
 					statusEl.innerHTML = text;
 				}
@@ -192,6 +121,11 @@ export const webdavSync = {
 			const localSessions = (await IDBManager.getAllSessions()).filter(s => s.id !== 'sess_welcome');
 			const { allFiles: remoteFiles, existingDirs: existingMonthDirs } = await this.getAllRemoteFiles();
 			
+			// 同步时更新目录缓存
+			this._existingDirs.add('pChat');
+			this._existingDirs.add('pChat/sync');
+			existingMonthDirs.forEach(d => this._existingDirs.add(`pChat/sync/${d}`));
+
 			const remoteLatestMap = new Map();
 			for (const file of remoteFiles) {
 				if (file.updateTime > (remoteLatestMap.get(file.id)?.updateTime || -1)) {
@@ -244,6 +178,7 @@ export const webdavSync = {
 					await Promise.all(Array.from(neededDirs).map(async (dirName) => {
 						try {
 							await this.request('MKCOL', `pChat/sync/${dirName}`);
+							this._existingDirs.add(`pChat/sync/${dirName}`);
 						} catch (e) {
 							if (e.message.includes('401')) throw e;
 						}
@@ -275,7 +210,6 @@ export const webdavSync = {
 							if (remote && (!local || remoteTime !== localTime)) action = 'download';
 							else if (local && !remote) action = 'delete-local';
 						} else {
-							// 普通同步：最新者优先
 							if (local && (!remote || localTime > remoteTime)) action = 'upload';
 							else if (remote && (!local || remoteTime > localTime)) action = 'download';
 						}
@@ -354,9 +288,6 @@ export const webdavSync = {
 		}
 	},
 
-	/**
-	 * Cleanup files marked as deleted on remote
-	 */
 	async cleanupRemoteDeleted() {
 		if (this._isMainSyncing) return;
 		this._isMainSyncing = true;
@@ -407,9 +338,6 @@ export const webdavSync = {
 		}
 	},
 
-	/**
-	 * Scan all monthly directories and return all file info
-	 */
 	async getAllRemoteFiles() {
 		let rootFiles;
 		try {
@@ -417,13 +345,7 @@ export const webdavSync = {
 		} catch (e) {
 			if (e.message.includes('404')) {
 				this._updateUI?.('创建同步目录...');
-				// 已知 pChat/sync 不存在，从 pChat 开始检查，减少重复的 PROPFIND 请求
-				await this.ensureDir('pChat');
-				try {
-					await this.request('MKCOL', 'pChat/sync');
-				} catch (e2) {
-					if (e2.message.includes('401')) throw e2;
-				}
+				await this.ensureDir('pChat/sync');
 				return { allFiles: [], existingDirs: [] };
 			}
 			throw e;
@@ -467,9 +389,6 @@ export const webdavSync = {
 		return { allFiles: allFilesResults.flat(), existingDirs };
 	},
 
-	/**
-	 * Get file list with directory info
-	 */
 	async getDirFiles(path, includeDir = false) {
 		const res = await this.request('PROPFIND', path, null, { Depth: '1' });
 		if (res.status !== 207) return [];
@@ -498,9 +417,6 @@ export const webdavSync = {
 		return results;
 	},
 
-	/**
-	 * Upload a single session
-	 */
 	async uploadSession(session) {
 		const date = new Date(session.timestamp || Date.now());
 		const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -528,9 +444,6 @@ export const webdavSync = {
 		});
 	},
 
-	/**
-	 * Download and import a single session
-	 */
 	async downloadAndImportSession(remoteFileInfo) {
 		const res = await this.request('GET', remoteFileInfo.path);
 		if (!res.ok) throw new Error(`Failed to download ${remoteFileInfo.path}`);
@@ -563,7 +476,6 @@ export const webdavSync = {
 			}
 		}
 
-		// 在导入之前检查本地时间戳
 		const local = await IDBManager.getSession(remoteFileInfo.id);
 		if (local && local.updateTime > remoteFileInfo.updateTime) {
 			console.warn(`[WebDAV] Skip importing ${remoteFileInfo.id}: local is newer (${local.updateTime} > ${remoteFileInfo.updateTime})`);
@@ -574,9 +486,6 @@ export const webdavSync = {
 		return true;
 	},
 
-	/**
-	 * Cleanup old versions of a session on remote
-	 */
 	async cleanupRemoteOldVersions(sessionId, currentTimestamp, allRemoteFiles) {
 		const oldVersions = allRemoteFiles.filter(f => f.id === sessionId && f.updateTime !== currentTimestamp);
 		for (const old of oldVersions) {
@@ -588,9 +497,29 @@ export const webdavSync = {
 		}
 	},
 
-	/**
-	 * Delete all versions of a session on remote
-	 */
+	async _encrypt(text, keyStr) {
+		const encoder = new TextEncoder();
+		const data = encoder.encode(text);
+		const hash = await crypto.subtle.digest('SHA-256', encoder.encode(keyStr));
+		const key = await crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, ['encrypt']);
+		const iv = crypto.getRandomValues(new Uint8Array(12));
+		const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+		const combined = new Uint8Array(iv.length + encrypted.byteLength);
+		combined.set(iv);
+		combined.set(new Uint8Array(encrypted), iv.length);
+		return combined;
+	},
+
+	async _decrypt(combined, keyStr) {
+		const encoder = new TextEncoder();
+		const hash = await crypto.subtle.digest('SHA-256', encoder.encode(keyStr));
+		const key = await crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, ['decrypt']);
+		const iv = combined.slice(0, 12);
+		const data = combined.slice(12);
+		const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+		return new TextDecoder().decode(decrypted);
+	},
+
 	async deleteRemoteSession(sessionId, timestamp) {
 		refreshStatusDot(true);
 		try {
@@ -624,7 +553,6 @@ export const webdavSync = {
 				}
 			}
 
-			// 只有在发现过 session 文件且没有删除标记的情况下，才上传标记
 			if (foundSessionFile && !alreadyHasMarker) {
 				await this.request('PUT', `${dirPath}/${markerName}`, Date.now(), {
 					'Content-Type': 'application/json'
@@ -635,5 +563,70 @@ export const webdavSync = {
 		} finally {
 			refreshStatusDot(false);
 		}
+	},
+
+	cancelUpdateRemoteSession(sessionId) {
+		if (this._updateRemoteTimers[sessionId]) {
+			clearTimeout(this._updateRemoteTimers[sessionId]);
+			delete this._updateRemoteTimers[sessionId];
+		}
+	},
+
+	_updateRemoteTimers: {},
+	async updateRemoteSession(session) {
+		if (!cfg.webdavUrl || !cfg.webdavUser || !cfg.webdavPass) return;
+		
+		const sessionId = session.id;
+		this.cancelUpdateRemoteSession(sessionId);
+
+		this._updateRemoteTimers[sessionId] = setTimeout(async () => {
+			delete this._updateRemoteTimers[sessionId];
+			refreshStatusDot(true);
+			try {
+				const date = new Date(session.timestamp || Date.now());
+				const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+				const dirPath = `pChat/sync/${yearMonth}`;
+
+				let files = [];
+				let dirExists = this._existingDirs.has(dirPath);
+
+				if (dirExists) {
+					try {
+						files = await this.getDirFiles(dirPath, false);
+					} catch (e) {
+						if (e.message.includes('404')) {
+							this._existingDirs.delete(dirPath);
+							dirExists = false;
+						}
+					}
+				}
+
+				if (!dirExists) {
+					await this.ensureDir(dirPath);
+					files = [];
+				}
+
+				await this.uploadSession(session);
+
+				const ext = cfg.webdavFileExt || 'json';
+				const currentFileName = `${session.id}@T${session.updateTime || 0}.${ext}`;
+				const prefix = `${session.id}@T`;
+				const markerName = `${session.id}@delete.${ext}`;
+				
+				for (const f of files) {
+					if ((f.name !== currentFileName && f.name.startsWith(prefix) && f.name.endsWith(`.${ext}`)) || f.name === markerName) {
+						try {
+							await this.request('DELETE', `${dirPath}/${f.name}`);
+						} catch (e) {
+							console.warn(`Failed to delete old remote version ${f.name}:`, e);
+						}
+					}
+				}
+			} catch (e) {
+				console.warn(`Failed to update remote session ${sessionId}:`, e);
+			} finally {
+				refreshStatusDot(false);
+			}
+		}, 15000); // 15 seconds debounce
 	}
 };

@@ -32,6 +32,11 @@ export const saveSessionMetaLocal = async (session, _renderSidebar = true) => {
 	}
 	await IDBManager.saveSessionMeta(session);
 	if (_renderSidebar) renderSidebar();
+
+	// 异步同步更新 WebDAV 上的文件
+	if (cfg.webdavSyncUpdate) {
+		webdavSync.updateRemoteSession(session);
+	}
 };
 
 export const updateSessionTitleIfNeeded = async (userText) => {
@@ -244,6 +249,9 @@ export const deleteSession = async (e, sessionId) => {
 
 	const session = tmp.sessions.find(s => s.id === sessionId);
 	const timestamp = session?.timestamp;
+
+	// 取消排队中的更新任务
+	webdavSync.cancelUpdateRemoteSession(sessionId);
 
 	// 异步同步删除 WebDAV 上的文件
 	if (cfg.webdavSyncDelete && timestamp) {
