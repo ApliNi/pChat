@@ -598,23 +598,38 @@ export const webdavSync = {
 			const date = new Date(timestamp);
 			const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 			const dirPath = `pChat/sync/${yearMonth}`;
-			await this.ensureDir(dirPath);
+			
+			let files = [];
+			try {
+				files = await this.getDirFiles(dirPath, false);
+			} catch (e) {
+				if (e.message.includes('404')) return;
+				throw e;
+			}
 
-			const files = await this.getDirFiles(dirPath, false);
 			const ext = cfg.webdavFileExt || 'json';
 			const prefix = `${sessionId}@`;
+			const markerName = `${sessionId}@delete.${ext}`;
+			let foundSessionFile = false;
+			let alreadyHasMarker = false;
 			
 			for (const f of files) {
+				if (f.name === markerName) {
+					alreadyHasMarker = true;
+					continue;
+				}
 				if (f.name.startsWith(prefix) && f.name.endsWith(`.${ext}`)) {
 					await this.request('DELETE', `${dirPath}/${f.name}`);
+					foundSessionFile = true;
 				}
 			}
 
-			// 上传删除标记
-			const markerName = `${sessionId}@delete.${ext}`;
-			await this.request('PUT', `${dirPath}/${markerName}`, Date.now(), {
-				'Content-Type': 'application/json'
-			});
+			// 只有在发现过 session 文件且没有删除标记的情况下，才上传标记
+			if (foundSessionFile && !alreadyHasMarker) {
+				await this.request('PUT', `${dirPath}/${markerName}`, Date.now(), {
+					'Content-Type': 'application/json'
+				});
+			}
 		} catch (e) {
 			console.warn(`Failed to delete remote session ${sessionId}:`, e);
 		} finally {

@@ -56,8 +56,8 @@ document.querySelector('#config .content').innerHTML = /*html*/`
 		<td class="select-wrapper">
 			<select id="webdavSyncModeSelect">
 				<option value="sync-latest">同步到最新版本 [双向]</option>
-				<option value="force-upload">强制上传 [本地 -> 远程] 清理远程数据</option>
-				<option value="force-download">强制下载 [远程 -> 本地] 清理本地数据</option>
+				<option value="force-upload">强制上传 [本地 -> 远程] 覆盖远程所有数据</option>
+				<option value="force-download">强制下载 [远程 -> 本地] 覆盖本地所有数据</option>
 			</select>
 		</td>
 	</tr>
