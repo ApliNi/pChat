@@ -1,4 +1,4 @@
-import { cfg, tmp } from "../config.js";
+import { cfg } from "../store.js";
 import { IDBManager } from "../db.js";
 import { refreshStatusDot } from "../util.js";
 

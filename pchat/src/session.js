@@ -1,7 +1,7 @@
 import { appendMsgDOM, scrollToMinimapBottom } from "./chat.js";
-import { cfg, tmp } from "./config.js";
+import { cfg, tmp } from "./store.js";
 import { IDBManager } from "./db.js";
-import { historyList, messageArea, rightPanel, userInput } from "./dom.js";
+import { historyList, messageArea, rightPanel, userInput, minimap } from "./dom.js";
 import { webdavSync } from "./modules/webdavSync.js";
 import { introSessionText } from "./text.js";
 import { generateId, generateSessionId, scrollToBottom, updateTitle, vibrate } from "./util.js";

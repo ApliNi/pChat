@@ -1,5 +1,5 @@
 import { aiService } from "../aiService.js";
-import { cfg, tmp } from "../config.js";
+import { cfg, tmp } from "../store.js";
 import { IDBManager } from "../db.js";
 import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, configBtn, searchBtn, messageArea, inputContainer, headerH1 } from '../dom.js';
 import { defaultSystemPrompt } from '../text.js';

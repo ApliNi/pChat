@@ -1,4 +1,4 @@
-import { tmp } from "../config.js";
+import { tmp } from "../store.js";
 import { IDBManager } from "../db.js";
 import { sidebar, sidebarToggle, minimap, rightPanel, newChatBtn, historyList, searchBtn, searchPage, configBtn, messageArea, inputContainer } from '../dom.js';
 import { switchSession } from '../session.js';

@@ -1192,8 +1192,8 @@ select {
 	font-size: 14px;
 }
 .search-result-snippet mark, .search-result-title mark {
-	background: rgba(255, 255, 255, 0.15);
-	color: #fff;
+	background: rgb(0 204 255 / 10%);
+	color: var(--sys-msg-color);
 	padding: 0 4px;
 	border-radius: 2px;
 }
@@ -1205,7 +1205,6 @@ select {
 	text-transform: uppercase;
 	letter-spacing: 1px;
 }
-
 
 
 #image {

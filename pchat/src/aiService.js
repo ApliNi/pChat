@@ -1,5 +1,5 @@
 import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
-import { cfg, tmp } from "./config.js";
+import { cfg, tmp } from "./store.js";
 import { modelSelect } from "./dom.js";
 import { generateId, scrollToBottom, toggleState, vibrate } from "./util.js";
 import { appendMsgDOM, renderContent, renderContentDOM } from './chat.js';

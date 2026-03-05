@@ -1,9 +1,9 @@
 import { aiService } from "./aiService.js";
 import { appendMsgDOM } from "./chat.js";
 import { saveCurrentSession, saveSessionMetaLocal, switchSession, updateSessionTitleIfNeeded } from './session.js';
-import { tmp } from "./config.js";
+import { tmp } from "./store.js";
 import { imagePreviewContainer, rightPanel, sendBtn, statusDot, userInput } from "./dom.js";
-import { IDBManager } from "./db.js";
+import { templates } from "./ui/templates.js";
 
 export const generateId = () => 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
 
@@ -117,23 +117,20 @@ export const renderImagePreviews = (attachedImageElement = null, meta = null) =>
 	if(attachedImageElement && meta){
 		const div = document.createElement('div');
 		div.className = 'preview-item';
+		div.id = meta.id;
 		div.innerHTML = `
 			<span class="file-info">${meta.name}</span>
-			<span class="remove-img" onclick="removeAttachedImage('${meta.id}', 'userInput')">&times;</span>
+			<span class="remove-img" data-img-id="${meta.id}" data-parent-id="userInput">&times;</span>
 		`;
 		attachedImageElement.loading = 'lazy';
+		attachedImageElement.classList.add('img-node');
 		div.insertBefore(attachedImageElement, div.firstChild);
 		imagePreviewContainer.appendChild(div);
 		return;
 	}
-	imagePreviewContainer.innerHTML = tmp.attachedImages.map((img) => `
-		<div class="preview-item">
-			<img src="${img.image_url.url}" loading="lazy">
-			<span class="file-info">${img.name}</span>
-			<span class="remove-img" onclick="removeAttachedImage('${img.id}', 'userInput')">&times;</span>
-		</div>
-	`).join('');
+	imagePreviewContainer.innerHTML = tmp.attachedImages.map((img) => templates.imagePreview(img, 'userInput')).join('');
 }
+
 
 export const attachedImage = async (fileName, imageBase64) => {
 	const img = new Image();

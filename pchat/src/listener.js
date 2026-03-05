@@ -1,8 +1,9 @@
 import { aiService } from "./aiService.js";
-import { cfg, tmp } from "./config.js";
+import { cfg, tmp } from "./store.js";
 import { attachedImageBtn, attachedImageInput, historyList, modelSelect, newChatBtn, rightPanel, sendBtn, sidebarToggle, userInput } from "./dom.js";
 import { attachedImage, handleSend } from "./util.js";
 import { createNewSession } from './session.js';
+
 
 // 全局跳转事件
 navigation.addEventListener('navigate', (event) => {
