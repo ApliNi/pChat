@@ -18,8 +18,7 @@ const searchInput = document.getElementById('search-input');
 const searchDeepBtn = document.getElementById('search-deep-btn');
 const searchResultsList = document.getElementById('search-results-list');
 
-let rightPanelScrollTop = 0;
-let searchPageScrollTop = 0;
+let scrollTop = 0; // 保存页面滚动位置
 let isDeepSearch = false;
 
 // 分页相关变量
@@ -29,6 +28,8 @@ const PAGE_SIZE = 200;
 
 // 切换搜索界面
 searchBtn.addEventListener('click', async () => {
+	const nowScrollTop = scrollTop;
+	scrollTop = rightPanel.scrollTop;
 	searchBtn.classList.toggle('open');
 	if(searchBtn.classList.contains('open')){
 		// 关闭配置页面（如果打开了）
@@ -36,8 +37,6 @@ searchBtn.addEventListener('click', async () => {
 		// 隐藏聊天组件
 
 		sidebar.classList.add('open-search');
-		rightPanelScrollTop = rightPanel.scrollTop;
-		rightPanel.scrollTop = searchPageScrollTop;
 
 		for(const e of [messageArea, inputContainer]){
 			e.style.display = 'none';
@@ -46,7 +45,7 @@ searchBtn.addEventListener('click', async () => {
 		newChatBtn.style.pointerEvents = 'none';
 		historyList.style.pointerEvents = 'none';
 		searchPage.style.display = '';
-		
+
 		searchInput.focus();
 	}else{
 		sidebar.classList.remove('open-search');
@@ -57,11 +56,9 @@ searchBtn.addEventListener('click', async () => {
 		newChatBtn.style.pointerEvents = '';
 		historyList.style.pointerEvents = '';
 		searchPage.style.display = 'none';
-
-		searchPageScrollTop = rightPanel.scrollTop;
-		rightPanel.scrollTop = rightPanelScrollTop;
 	}
 	sidebarToggle.checked = false;
+	rightPanel.scrollTop = nowScrollTop;
 });
 
 // 搜索逻辑

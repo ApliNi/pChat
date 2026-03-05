@@ -522,16 +522,15 @@ if (true) {
 
 // 配置页面管理
 if (true) {
-	let rightPanelScrollTop = 0;
-	let configPageScrollTop = 0;
+	let scrollTop = 0;
 
 	configBtn.addEventListener('click', async () => {
+		const nowScrollTop = scrollTop;
+		scrollTop = rightPanel.scrollTop;
 		configBtn.classList.toggle('open');
 		if (configBtn.classList.contains('open')) {
 			if (searchBtn.classList.contains('open')) searchBtn.click();
 			sidebar.classList.add('open-config');
-			rightPanelScrollTop = rightPanel.scrollTop;
-			rightPanel.scrollTop = configPageScrollTop;
 
 			const defaultSystemPromptInput = document.getElementById('defaultSystemPromptInput');
 			if (defaultSystemPromptInput) defaultSystemPromptInput.textContent = cfg.defaultSystemPrompt;
@@ -554,9 +553,6 @@ if (true) {
 			historyList.style.pointerEvents = '';
 			rightPanel.querySelector('& > .config').style.display = 'none';
 
-			configPageScrollTop = rightPanel.scrollTop;
-			rightPanel.scrollTop = rightPanelScrollTop;
-
 			applyHeaderVisible();
 
 			if (openaiApiModify) {
@@ -565,5 +561,6 @@ if (true) {
 			}
 		}
 		sidebarToggle.checked = false;
+		rightPanel.scrollTop = nowScrollTop;
 	});
 }
