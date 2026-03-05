@@ -10,6 +10,7 @@ export const webdavSync = {
 	dirCache: new Set(),
 	_isMainSyncing: false,
 	_updateUI: null,
+	onSessionUpdate: null,
 
 	/**
 	 * Encryption/Decryption Helpers
@@ -245,8 +246,13 @@ export const webdavSync = {
 				} else if (action === 'download') {
 					this._updateUI(`[${count}/${total}] [DOWNLOAD] ${displayTitle}`);
 					try {
-						await this.downloadAndImportSession(remote);
-						downloadCount++;
+						const imported = await this.downloadAndImportSession(remote);
+						if (imported) {
+							downloadCount++;
+							if (this.onSessionUpdate) await this.onSessionUpdate(id);
+						} else {
+							skipCount++;
+						}
 					} catch (e) {
 						failCount++;
 						if (e.message.includes('401')) throw e;
@@ -265,6 +271,7 @@ export const webdavSync = {
 					try {
 						await IDBManager.deleteSession(id);
 						deleteCount++;
+						if (this.onSessionUpdate) await this.onSessionUpdate(id);
 					} catch (e) {
 						failCount++;
 					}
@@ -276,15 +283,6 @@ export const webdavSync = {
 			const duration = this._formatDuration(Date.now() - startTime);
 			const finalStatus = `[同步完成] 跳过[${skipCount}] 上传[${uploadCount}] 下载[${downloadCount}] 删除[${deleteCount}] 失败[${failCount}] 耗时[${duration}]`;
 			this._updateUI(finalStatus);
-
-			const updateCount = downloadCount + deleteCount;
-			if (updateCount > 0) {
-				setTimeout(() => {
-					if (confirm(`已从 WebDAV 更新了 ${updateCount} 个会话. 是否刷新页面以重载数据?`)) {
-						location.reload();
-					}
-				}, 100);
-			}
 		} catch (err) {
 			console.error('WebDAV Sync failed:', err);
 			this._updateUI('同步失败: ' + err.message, true);
@@ -481,7 +479,16 @@ export const webdavSync = {
 				data.sessions[0].updateTime = 0;
 			}
 		}
+
+		// 在导入之前检查本地时间戳
+		const local = await IDBManager.getSession(remoteFileInfo.id);
+		if (local && local.updateTime > remoteFileInfo.updateTime) {
+			console.warn(`[WebDAV] Skip importing ${remoteFileInfo.id}: local is newer (${local.updateTime} > ${remoteFileInfo.updateTime})`);
+			return false;
+		}
+
 		await IDBManager.importBackup(data, false);
+		return true;
 	},
 
 	/**

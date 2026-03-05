@@ -116,9 +116,10 @@ export const createIntroSession = async () => {
 };
 
 let switchSessionLock = '';
-export const switchSession = async (id) => {
+export const switchSession = async (id, force = false) => {
 	if (tmp.isProcessing) return;
-	if (cfg.lastSessionId === id && messageArea.innerHTML !== '') return;
+	if (!force && cfg.lastSessionId === id && messageArea.innerHTML !== '') return;
+
 
 	cfg.setItem('lastSessionId', id);
 
@@ -272,4 +273,22 @@ export const deleteSession = async (e, sessionId) => {
 		renderSidebar();
 	}
 };
+
+webdavSync.onSessionUpdate = async (id) => {
+	tmp.sessions = await IDBManager.getAllSessions();
+	await renderSidebar();
+	if (id === cfg.lastSessionId) {
+		if (tmp.sessions.some(s => s.id === id)) {
+			await switchSession(id, true);
+		} else {
+			if (tmp.sessions.length > 0) {
+				const sorted = [...tmp.sessions].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+				await switchSession(sorted[0].id);
+			} else {
+				await createNewSession();
+			}
+		}
+	}
+};
+
 
