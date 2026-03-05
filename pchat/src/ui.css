@@ -938,6 +938,7 @@ select {
 	height: 12px;
 	margin-bottom: -1.2px !important;
 	border: 2px double var(--meta-color);
+	transition: all 0.2s;
 }
 .markdown-body input[type="checkbox"]:checked { border: 6px double var(--meta-color); }
 
@@ -1063,10 +1064,10 @@ select {
 	padding: 2px 0;
 }
 
-.config #openaiApiKeyInput {
+.config input.password {
 	-webkit-text-security: disc;
 }
-.config #openaiApiKeyInput:focus {
+.config input.password:focus {
 	-webkit-text-security: none;
 }
 

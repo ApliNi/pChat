@@ -136,8 +136,7 @@ export const IDBManager = {
 	},
 
 	getConfig() {
-		return new Promise(async (resolve, reject) => {
-			if(!this.db) await this.init();
+		return new Promise((resolve, reject) => {
 			const tx = this.db.transaction('config', 'readonly');
 			const store = tx.objectStore('config');
 			const request = store.getAll();
@@ -168,7 +167,7 @@ export const IDBManager = {
 			const store = tx.objectStore('config');
 			const request = store.delete(id);
 			request.onsuccess = () => resolve();
-			request.onerror = () => reject();
+			request.onerror = () => reject(request.error);
 		});
 	},
 

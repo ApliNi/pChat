@@ -45,8 +45,7 @@ export const aiService = {
 
 				if (!window.puter) await aiService.loadPuter();
 
-				models = await window.puter.ai.listModels();
-				models.map(m => ({ id: m.id, name: m.name || m.id }));
+				models = (await window.puter.ai.listModels()).map(m => ({ id: m.id, name: m.name || m.id }));
 			}
 
 			else if (cfg.modelService === 'OpenAI-API') {

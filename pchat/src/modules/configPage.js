@@ -218,12 +218,12 @@ if (true) {
 			<tr><td>用户名/密码</td>
 				<td style="display: flex; gap: 4px;">
 					<input id="webdavUserInput" type="text" placeholder="username">
-					<input id="webdavPassInput" type="password" placeholder="password">
+					<input id="webdavPassInput" class="password" type="text" placeholder="password">
 				</td>
 			</tr>
 			<tr><td>加密密钥/文件后缀</td>
 				<td style="display: flex; gap: 4px;">
-					<input id="webdavEncryptionKeyInput" type="password" placeholder="留空将上传明文数据">
+					<input id="webdavEncryptionKeyInput" class="password" type="text" placeholder="留空将上传明文数据">
 					<input id="webdavFileExtInput" type="text" placeholder="json" value="" style="max-width: min-content;">
 				</td>
 			</tr>
@@ -359,7 +359,7 @@ if (true) {
 					<td><input id="openaiApiEndpointInput" name="openaiApiEndpoint" type="url" placeholder="https://api.openai.com/v1"></td>
 				</tr>
 				<tr><td>API 密钥 <code>[<span id="openaiApiKeyCount">0</span>]</code></td>
-					<td><input id="openaiApiKeyInput" name="openaiApiKey" type="text" placeholder="sk-xxxxxx, sk-xxxxxx, sk-xxxxxx"></td>
+					<td><input id="openaiApiKeyInput" class="password" name="openaiApiKey" type="text" placeholder="sk-xxxxxx, sk-xxxxxx, sk-xxxxxx"></td>
 				</tr>
 				<tr><td>优先匹配模型列表</td>
 					<td><input id="openaiPriorityModelsInput" name="openaiPriorityModels" type="text" placeholder="qwen3-max, gemini-3-pro, deepseek-v3.2-exp"></td>
