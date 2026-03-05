@@ -221,8 +221,15 @@ export const webdavSync = {
 
 					let action = 'skip';
 					if (remote?.isDelete) {
-						const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
-						action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
+						if (mode === 'force-upload') {
+							action = local ? 'upload' : 'skip';
+						} else if (local && localTime > remoteTime) {
+							action = 'upload';
+						} else if (local && (mode === 'force-download' || cfg.webdavSyncDelete)) {
+							action = 'delete-local';
+						} else {
+							action = 'skip';
+						}
 					} else if (mode === 'force-upload') {
 						if (local && (!remote || localTime !== remoteTime)) action = 'upload';
 						else if (!local && remote) action = 'delete-remote';
@@ -240,6 +247,9 @@ export const webdavSync = {
 						}
 						try {
 							await this.uploadSession(local);
+							if (remote?.isDelete) {
+								await this.request('DELETE', remote.path).catch(() => {});
+							}
 							uploadCount++;
 						} catch (e) {
 							console.error(`Upload ${id} failed:`, e);
@@ -396,7 +406,7 @@ export const webdavSync = {
 		const existingDirs = monthDirs.map(d => d.name);
 
 		const ext = cfg.webdavFileExt || 'json';
-		const regex = new RegExp(`^(sess_.*)@(?:T(\\d+)|(delete))\\.${ext}$`);
+		const regex = new RegExp(`^(sess_.*)@(?:T(\\d+)|D(\\d+))\\.${ext}$`);
 		const transferRegex = /\.transfer$/;
 		
 		this._updateUI?.(`扫描远程目录 [0/${monthDirs.length}]`);
@@ -417,7 +427,7 @@ export const webdavSync = {
 						const isDelete = !!match[3];
 						sessions.push({
 							id: match[1],
-							updateTime: isDelete ? Infinity : parseInt(match[2]),
+							updateTime: parseInt(isDelete ? match[3] : match[2]),
 							isDelete,
 							name: file.name,
 							path: `pChat/sync/${dir.name}/${file.name}`
@@ -441,13 +451,15 @@ export const webdavSync = {
 		const latestMap = new Map();
 		const redundantFiles = [];
 
-		// 优先级: delete > 时间戳大 > 时间戳小
+		// 优先级: 时间戳大 > delete > 时间戳小
 		for (const file of allFiles) {
 			const existing = latestMap.get(file.id);
 			if (!existing) {
 				latestMap.set(file.id, file);
 			} else {
-				if (file.isDelete || (!existing.isDelete && file.updateTime > existing.updateTime)) {
+				const isNewer = file.updateTime > existing.updateTime;
+				const isSameTimeButDelete = file.updateTime === existing.updateTime && file.isDelete && !existing.isDelete;
+				if (isNewer || isSameTimeButDelete) {
 					redundantFiles.push(existing);
 					latestMap.set(file.id, file);
 				} else {
@@ -628,7 +640,8 @@ export const webdavSync = {
 				});
 
 				const latest = sessionFiles[0];
-				const newName = `${sessionId}@delete.${ext}`;
+				const latestUpdateTime = parseInt(latest.name.match(/@T(\d+)\./)?.[1] || 0);
+				const newName = `${sessionId}@D${latestUpdateTime}.${ext}`;
 				const destPath = cfg.webdavUrl.replace(/\/$/, '') + '/' + `${dirPath}/${newName}`.replace(/^\//, '');
 				
 				// 仅重命名这一个文件
@@ -677,7 +690,7 @@ export const webdavSync = {
 					const files = await this.getDirFiles(dirPath, false);
 					const currentFileName = `${sessionId}@T${session.updateTime || 0}.${ext}`;
 					const toDelete = files.filter(f =>
-						(f.name.startsWith(`${sessionId}@T`) || f.name === `${sessionId}@delete.${ext}`) &&
+						(f.name.startsWith(`${sessionId}@T`) || f.name.startsWith(`${sessionId}@D`)) &&
 						f.name !== currentFileName
 					);
 					for (const f of toDelete) {

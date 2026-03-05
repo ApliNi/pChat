@@ -22,25 +22,6 @@ export const IDBManager = {
 				if (!db.objectStoreNames.contains('config')) {
 					db.createObjectStore('config', { keyPath: 'id' });
 				}
-
-				// 更新数据库
-				if (oldVersion <= 3) {
-					console.log(`更新数据库[3]`);
-					const tx = e.target.transaction;
-					const sessionStore = tx.objectStore('sessions');
-					const getAllRequest = sessionStore.getAll();
-					getAllRequest.onsuccess = () => {
-						const sessions = getAllRequest.result;
-						const now = Date.now();
-						sessions.forEach(session => {
-							if (session.updateTime === undefined) {
-								session.updateTime = now;
-								sessionStore.put(session);
-							}
-						});
-					};
-					console.log(`更新数据库[3] 更新完成`);
-				}
 			};
 
 			request.onsuccess = (e) => {
