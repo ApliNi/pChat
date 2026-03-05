@@ -252,85 +252,92 @@ export const webdavSync = {
 			}
 
 			const workers = Array.from({ length: threads }, async () => {
-				while (taskIndex < allIdsArray.length) {
+				while (true) {
 					const currentIndex = taskIndex++;
+					if (currentIndex >= allIdsArray.length) break;
+
 					const id = allIdsArray[currentIndex];
+					try {
+						const local = localMap.get(id);
+						const remote = remoteLatestMap.get(id);
 
-					const local = localMap.get(id);
-					const remote = remoteLatestMap.get(id);
+						const localTime = local?.updateTime || 0;
+						const remoteTime = remote?.updateTime || 0;
 
-					const localTime = local?.updateTime || 0;
-					const remoteTime = remote?.updateTime || 0;
-
-					let action = 'skip';
-					if (remote?.isDelete) {
-						const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
-						action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
-					} else if (mode === 'force-upload') {
-						if (local && localTime !== remoteTime) action = 'upload';
-						else if (!local && remote) action = 'delete-remote';
-					} else if (mode === 'force-download') {
-						if (remote && remoteTime !== localTime) action = 'download';
-						else if (local && !remote) action = 'delete-local';
-					} else {
-						// 普通同步：最新者优先
-						if (local && localTime > remoteTime) action = 'upload';
-						else if (remote && remoteTime > localTime) action = 'download';
-					}
-
-					if (action === 'upload') {
-						if (local && (local.updateTime === undefined || local.updateTime === null)) {
-							local.updateTime = 0;
+						let action = 'skip';
+						if (remote?.isDelete) {
+							const shouldDeleteLocal = (mode === 'force-download' || (mode !== 'force-upload' && cfg.webdavSyncDelete));
+							action = local ? (mode === 'force-upload' ? 'upload' : (shouldDeleteLocal ? 'delete-local' : 'skip')) : 'skip';
+						} else if (mode === 'force-upload') {
+							if (local && (!remote || localTime !== remoteTime)) action = 'upload';
+							else if (!local && remote) action = 'delete-remote';
+						} else if (mode === 'force-download') {
+							if (remote && (!local || remoteTime !== localTime)) action = 'download';
+							else if (local && !remote) action = 'delete-local';
+						} else {
+							// 普通同步：最新者优先
+							if (local && (!remote || localTime > remoteTime)) action = 'upload';
+							else if (remote && (!local || remoteTime > localTime)) action = 'download';
 						}
-						let retries = 1;
-						while (true) {
-							try {
-								await this.uploadSession(local);
-								await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
-								uploadCount++;
-								break;
-							} catch (e) {
-								if (e.message.includes('401')) throw e;
-								if (retries > 0) {
-									retries--;
-									await new Promise(resolve => setTimeout(resolve, 3000));
-									continue;
+
+						if (action === 'upload') {
+							if (local && (local.updateTime === undefined || local.updateTime === null)) {
+								local.updateTime = 0;
+							}
+							let retries = 1;
+							while (true) {
+								try {
+									await this.uploadSession(local);
+									await this.cleanupRemoteOldVersions(id, local.updateTime, remoteFiles);
+									uploadCount++;
+									break;
+								} catch (e) {
+									if (e.message.includes('401')) throw e;
+									if (retries > 0) {
+										retries--;
+										await new Promise(resolve => setTimeout(resolve, 3000));
+										continue;
+									}
+									failCount++;
+									break;
 								}
+							}
+						} else if (action === 'download') {
+							try {
+								const imported = await this.downloadAndImportSession(remote);
+								if (imported) {
+									downloadCount++;
+									if (this.onSessionUpdate) await this.onSessionUpdate(id);
+								} else {
+									skipCount++;
+								}
+							} catch (e) {
 								failCount++;
-								break;
+								if (e.message.includes('401')) throw e;
 							}
-						}
-					} else if (action === 'download') {
-						try {
-							const imported = await this.downloadAndImportSession(remote);
-							if (imported) {
-								downloadCount++;
+						} else if (action === 'delete-remote') {
+							try {
+								await this.request('DELETE', remote.path);
+								deleteCount++;
+							} catch (e) {
+								failCount++;
+								if (e.message.includes('401')) throw e;
+							}
+						} else if (action === 'delete-local') {
+							try {
+								await IDBManager.deleteSession(id);
+								deleteCount++;
 								if (this.onSessionUpdate) await this.onSessionUpdate(id);
-							} else {
-								skipCount++;
+							} catch (e) {
+								failCount++;
 							}
-						} catch (e) {
-							failCount++;
-							if (e.message.includes('401')) throw e;
+						} else {
+							skipCount++;
 						}
-					} else if (action === 'delete-remote') {
-						try {
-							await this.request('DELETE', remote.path);
-							deleteCount++;
-						} catch (e) {
-							failCount++;
-							if (e.message.includes('401')) throw e;
-						}
-					} else if (action === 'delete-local') {
-						try {
-							await IDBManager.deleteSession(id);
-							deleteCount++;
-							if (this.onSessionUpdate) await this.onSessionUpdate(id);
-						} catch (e) {
-							failCount++;
-						}
-					} else {
-						skipCount++;
+					} catch (e) {
+						if (e.message.includes('401')) throw e;
+						console.error(`Task ${id} failed:`, e);
+						failCount++;
 					}
 				}
 			});
