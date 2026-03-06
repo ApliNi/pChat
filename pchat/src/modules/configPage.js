@@ -209,7 +209,7 @@ if (true) {
 	configContent.insertAdjacentHTML('beforeend', /*html*/`
 		<h2>WebDAV 同步</h2>
 		<table class="input-config-table">
-			<tr><td>WebDAV URL/并发</td>
+			<tr><td>服务器/并发</td>
 				<td style="display: flex; gap: 4px;">
 					<input id="webdavUrlInput" type="url" placeholder="https://dav.example.com/dav">
 					<input id="webdavSyncThreadsInput" type="number" placeholder="4" min="1" max="256" style="max-width: min-content;">
