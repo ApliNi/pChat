@@ -69,6 +69,6 @@ self.addEventListener('fetch', (event) => {
 			}
 		}
 		lock = false;
-	}, 120 * 1000);
+	}, 4 * 60 * 1000);
 })();
 
