@@ -1,4 +1,4 @@
-import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
+import morphdom from 'https://esm.sh/morphdom@2.7.7?bundle';
 import { cfg, tmp } from "./store.js";
 import { modelSelect } from "./dom.js";
 import { generateId, scrollToBottom, toggleState, vibrate } from "./util.js";

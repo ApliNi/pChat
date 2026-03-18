@@ -10,8 +10,8 @@ if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js', { scope: '/' });
 }
 
-import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.3.1/+esm';
-import morphdom from 'https://cdn.jsdelivr.net/npm/morphdom@2.7.7/+esm';
+import DOMPurify from 'https://esm.sh/dompurify@3.3.1?bundle';
+import morphdom from 'https://esm.sh/morphdom@2.7.7?bundle';
 import { IDBManager } from './db.js';
 import { cfg, tmp } from './store.js';
 import { renderSidebar, switchSession, createIntroSession, createNewSession } from './session.js';
@@ -81,7 +81,7 @@ if (cfg.headerText && headerH1) {
 console.log(`[Main] 加载公式字体`);
 const fontLink = document.createElement('link');
 fontLink.rel = 'stylesheet';
-fontLink.href = 'https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css';
+fontLink.href = 'https://esm.sh/katex@0.16.27/dist/katex.min.css';
 document.querySelector('head').appendChild(fontLink);
 
 // 异步加载模型

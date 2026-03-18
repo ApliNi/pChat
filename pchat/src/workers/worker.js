@@ -1,8 +1,8 @@
 
-import hljs from 'https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/+esm';
-import Katex from 'https://cdn.jsdelivr.net/npm/katex@0.16.27/+esm';
-import { Marked } from 'https://cdn.jsdelivr.net/npm/marked@17.0.1/+esm';
-import markedKatex from 'https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.6/+esm';
+import hljs from 'https://esm.sh/highlight.js@11.11.1?bundle';
+import Katex from 'https://esm.sh/katex@0.16.27?bundle';
+import { Marked } from 'https://esm.sh/marked@17.0.1?bundle';
+import markedKatex from 'https://esm.sh/marked-katex-extension@5.1.6?bundle';
 
 (async () => {
 

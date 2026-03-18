@@ -1,5 +1,5 @@
-import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.3.1/+esm';
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.esm.min.mjs';
+import DOMPurify from 'https://esm.sh/dompurify@3.3.1?bundle';
+import mermaid from 'https://esm.sh/mermaid@11.12.2/dist/mermaid.esm.min.mjs';
 import { messageArea, minimap } from "./dom.js";
 import { worker } from './worker.js';
 import { scrollToBottom } from './util.js';
