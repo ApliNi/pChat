@@ -251,6 +251,101 @@ export const aiService = {
 		let loadingTime = 0;
 		let firstTokenTime = null;
 		let runTime = 0;
+		const STREAM_RENDER_INTERVAL = 50;
+		const STREAM_SCROLL_INTERVAL = 50;
+		let think = 0;
+		let textItem = { type: 'text', text: '', reasoning: '' };
+		let isRenderDirty = false;
+		let isScrollDirty = false;
+		let renderScheduled = false;
+		let scrollScheduled = false;
+		let isFlushing = false;
+
+		const updateThinkState = () => {
+			const thinkEl = uiElements.contentArea.querySelector('.think.__pChat__');
+			if(!thinkEl) return;
+
+			if(textItem.reasoning && think === 0){
+				think = 1;
+				thinkEl.open = true;
+			}
+			if(textItem.text && think === 1){
+				think = 2;
+				setTimeout(() => { thinkEl.open = false; }, 200);
+			}
+		};
+
+		const flushScroll = () => {
+			scrollScheduled = false;
+			if(!isScrollDirty) return;
+			isScrollDirty = false;
+			scrollToBottom();
+		};
+
+		const scheduleScroll = (force = false) => {
+			if(force){
+				isScrollDirty = true;
+				flushScroll();
+				return;
+			}
+
+			isScrollDirty = true;
+			if(scrollScheduled) return;
+			scrollScheduled = true;
+			setTimeout(flushScroll, STREAM_SCROLL_INTERVAL);
+		};
+
+		const flushRender = async (force = false) => {
+			if(isFlushing) return;
+			if(!isRenderDirty && !force) return;
+
+			isFlushing = true;
+			renderScheduled = false;
+
+			try {
+				do {
+					isRenderDirty = false;
+					const htmlContent = await renderContent([ textItem ]);
+					morphdom(uiElements.contentArea, `<div>${htmlContent}</div>`, {
+						childrenOnly: true,
+						onBeforeElUpdated: (from, to) => {
+							// 如果节点内容完全一致, 直接跳过更新
+							if (from.isEqualNode(to)) {
+								return false;
+							}
+							// 保持 details 的打开状态
+							if (from.tagName === 'DETAILS') {
+								to.open = from.open;
+							}
+							// 保持 pre 的滚动条状态
+							if (from.tagName === 'PRE') {
+								to.scrollLeft = from.scrollLeft;
+								to.scrollTop = from.scrollTop;
+							}
+							return true;
+						},
+					});
+
+					updateThinkState();
+					scheduleScroll();
+				} while (isRenderDirty);
+			} finally {
+				isFlushing = false;
+				if(force && isRenderDirty){
+					await flushRender(true);
+				}
+			}
+		};
+
+		const scheduleRender = () => {
+			isRenderDirty = true;
+			if(renderScheduled || isFlushing) return;
+			renderScheduled = true;
+			setTimeout(() => {
+				void flushRender();
+			}, STREAM_RENDER_INTERVAL);
+		};
+
 		const timerInterval = setInterval(() => {
 			if(firstTokenTime === null){
 				loadingTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -282,8 +377,6 @@ export const aiService = {
 			const responseStream = aiService.chat(apiHistory, cfg.lastModel, tmp.abortController.signal);
 
 			// 2. 循环处理流数据
-			let think = 0;
-			let textItem = { type: 'text', text: '', reasoning: '' };
 			for await (const part of responseStream) {
 				// 检查是否被中止
 				if (tmp.abortController.signal.aborted) {
@@ -302,46 +395,11 @@ export const aiService = {
 					textItem.text += part.text;
 				}
 
-				// 延迟渲染, 防止卡顿
-				await new Promise((resolve) => requestAnimationFrame(resolve));
-
-				// 渲染新内容
-				const htmlContent = await renderContent([ textItem ]);
-				morphdom(uiElements.contentArea, `<div>${htmlContent}</div>`, {
-					childrenOnly: true,
-					onBeforeElUpdated: (from, to) => {
-						// 如果节点内容完全一致, 直接跳过更新
-						if (from.isEqualNode(to)) {
-							return false;
-						}
-						// 保持 details 的打开状态
-						if (from.tagName === 'DETAILS') {
-							to.open = from.open;
-						}
-						// 保持 pre 的滚动条状态
-						if (from.tagName === 'PRE') {
-							to.scrollLeft = from.scrollLeft;
-							to.scrollTop = from.scrollTop;
-						}
-						return true;
-					},
-				});
-
-				// 处理思考框折叠
-				const thinkEl = uiElements.contentArea.querySelector('.think.__pChat__');
-				if(thinkEl){
-					if(part.reasoning && think === 0){
-						think = 1;
-						thinkEl.open = true;
-					}
-					if(part.text && think === 1){
-						think = 2;
-						setTimeout(() => { thinkEl.open = false; }, 200);
-					}
-				}
-				
-				scrollToBottom();
+				scheduleRender();
 			}
+
+			await flushRender(true);
+			scheduleScroll(true);
 			
 			await renderContentDOM(uiElements.contentArea);
 
