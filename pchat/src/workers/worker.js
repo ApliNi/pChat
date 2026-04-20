@@ -117,7 +117,7 @@ import markedKatex from 'https://esm.sh/marked-katex-extension@5.1.6?bundle';
 			
 			// 添加置顶会话
 			if (pinnedSessions.length > 0) {
-				html += /*html*/`<details class="history-group pinned-group" ${pinnedCollapsed ? '' : 'open'}><summary class="history-group-title">PINNED</summary>`;
+				html += /*html*/`<details class="history-group pinned-group" data-group-key="pinned" ${pinnedCollapsed ? '' : 'open'}><summary class="history-group-title">PINNED</summary>`;
 				pinnedSessions.forEach(session => {
 					html += /*html*/`
 						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">
@@ -138,7 +138,7 @@ import markedKatex from 'https://esm.sh/marked-katex-extension@5.1.6?bundle';
 				const groupSessions = groupedSessions[yearMonth];
 				let time = `${yearMonth.split('-')[0]}-` + `${yearMonth.split('-')[1]}`.padStart(2, '0');
 				if(time === '1970-01') time = 'SYSTEM';
-				html += /*html*/`<details class="history-group" open><summary class="history-group-title">${time}</summary>`;
+				html += /*html*/`<details class="history-group" data-group-key="${yearMonth}" open><summary class="history-group-title">${time}</summary>`;
 				groupSessions.forEach(session => {
 					html += /*html*/`
 						<div class="history-item" data-session-id="${session.id}" data-session-pinned="${!!session.pinned}">

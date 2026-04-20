@@ -6,6 +6,7 @@ import { webdavSync } from "./modules/webdavSync.js";
 import { introSessionText } from "./text.js";
 import { generateId, generateSessionId, scrollToBottom, updateTitle, vibrate } from "./util.js";
 import { worker } from "./worker.js";
+import morphdom from 'https://esm.sh/morphdom@2.7.7?bundle';
 
 
 export const saveCurrentSession = async () => {
@@ -75,14 +76,14 @@ export const createNewSession = async () => {
 
 	tmp.messages = [sysMsg];
 
-	await saveSessionMetaLocal(newSession);
+	await saveSessionMetaLocal(newSession, false);
 	await saveCurrentSession();
 
 	messageArea.innerHTML = '';
 	minimap.innerHTML = '';
 	appendMsgDOM({ ...sysMsg, model: 'SYSTEM' });
 
-	renderSidebar();
+	await renderSidebar(false, 'nearest');
 	userInput.focus();
 	updateTitle();
 
@@ -212,22 +213,69 @@ export const switchSession = async (id, force = false) => {
 	switchSessionLock = '';
 };
 
+let sidebarRenderSeq = 0;
+const isElementOutsideContainerView = (container, element) => {
+	if (!container || !element) return false;
+	const containerRect = container.getBoundingClientRect();
+	const elementRect = element.getBoundingClientRect();
+	return elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom;
+};
+
 export const renderSidebar = async (onlyHighlight = false, scrollIntoViewBlock = 'center') => {
 	if(onlyHighlight){
 		for (const el of historyList.querySelectorAll('.history-item.active')) {
 			el.classList.remove('active');
 		}
 	}else{
+		const editingTitle = historyList.querySelector('.history-title[contenteditable="true"]');
+		if (editingTitle) {
+			const activeWhenEditing = historyList.querySelector(`[data-session-id="${cfg.lastSessionId}"]`);
+			activeWhenEditing?.classList?.add('active');
+			if (activeWhenEditing && isElementOutsideContainerView(historyList, activeWhenEditing)) {
+				activeWhenEditing.scrollIntoView({ behavior: 'smooth', block: scrollIntoViewBlock });
+			}
+			return;
+		}
+
+		const renderSeq = ++sidebarRenderSeq;
 		const html = await worker.run('renderSidebar', {
 			sessions: [...tmp.sessions],
 			pinnedCollapsed: cfg.pinnedCollapsed
 		});
-		historyList.innerHTML = html;
+		if (renderSeq !== sidebarRenderSeq) return;
+
+		const nextTree = document.createElement('div');
+		nextTree.innerHTML = html;
+
+		morphdom(historyList, nextTree, {
+			childrenOnly: true,
+			getNodeKey: (node) => {
+				if (node.nodeType !== Node.ELEMENT_NODE) return undefined;
+				if (node.dataset?.sessionId) return `session:${node.dataset.sessionId}`;
+				if (node.dataset?.groupKey) return `group:${node.dataset.groupKey}`;
+				return undefined;
+			},
+			onBeforeElUpdated: (from, to) => {
+				if (from.isEqualNode(to)) return false;
+
+				if (from.tagName === 'DETAILS') {
+					to.open = from.open;
+				}
+
+				if (from.classList?.contains('history-title') && from.isContentEditable) {
+					return false;
+				}
+
+				return true;
+			},
+		});
 	}
 
 	const active = historyList.querySelector(`[data-session-id="${cfg.lastSessionId}"]`);
 	active?.classList?.add('active');
-	active?.scrollIntoView({ behavior: 'smooth', block: scrollIntoViewBlock });
+	if (active && isElementOutsideContainerView(historyList, active)) {
+		active.scrollIntoView({ behavior: 'smooth', block: scrollIntoViewBlock });
+	}
 };
 
 export const renameSession = async (e, sessionId, newTitle) => {
